@@ -1255,8 +1255,15 @@ function showCarousel() {
    Plays while the call sits in the claims queue ("hotline:queue") and
    fades out when Ms Becker picks up. To use your own licensed file
    instead, set JINGLE.src, e.g. 'hold-jingle.mp3' (put it next to the page). */
-var JINGLE = { enabled: true, src: '', volume: 0.5 };
-var holdNodes = null, holdAudioEl = null;
+var JINGLE = {
+  enabled: true,
+  src: 'hold-jingle.m4a',   // '' = use the built-in synthesized tune instead
+  startAt: 0,                 // seconds into the file to start from
+  maxMs: 12000,               // play at most this long (10-15 s), then fade out
+  fadeMs: 1200,
+  volume: 0.5
+};
+var holdNodes = null, holdAudioEl = null, holdAudioTimer = null, holdFadeTimer = null;
 
 function holdJingle(state) {
   if (!JINGLE.enabled) return;
@@ -1267,11 +1274,25 @@ function startHoldJingle() {
   if (holdNodes || holdAudioEl) return;
   try {
     if (JINGLE.src) {
-      holdAudioEl = new Audio(JINGLE.src);
-      holdAudioEl.volume = JINGLE.volume;
-      holdAudioEl.play().catch(function () {});
+      var el = new Audio(JINGLE.src);
+      holdAudioEl = el;
+      el.volume = JINGLE.volume;
+      function fallback() { if (holdAudioEl === el) { holdAudioEl = null; clearTimeout(holdAudioTimer); startSynthJingle(); } }
+      el.addEventListener('error', fallback);
+      el.addEventListener('loadedmetadata', function () {
+        try { if (JINGLE.startAt) el.currentTime = Math.min(JINGLE.startAt, Math.max(0, el.duration - 1)); } catch (e) {}
+      });
+      var pr = el.play();
+      if (pr && pr.catch) pr.catch(function () { fallback(); });
+      holdAudioTimer = setTimeout(function () { stopHoldJingle(true); }, JINGLE.maxMs - JINGLE.fadeMs);
       return;
     }
+    startSynthJingle();
+  } catch (e) { console.warn('[AVA] jingle', e); }
+}
+
+function startSynthJingle() {
+  try {
     unlockAudio();
     if (!audioCtx) return;
     var BEAT = 0.6, t0 = audioCtx.currentTime + 0.05;
@@ -1327,7 +1348,16 @@ function startHoldJingle() {
 
 function stopHoldJingle(fade) {
   try {
-    if (holdAudioEl) { holdAudioEl.pause(); holdAudioEl = null; }
+    clearTimeout(holdAudioTimer);
+    if (holdAudioEl) {
+      var el2 = holdAudioEl; holdAudioEl = null;
+      var steps = fade ? 12 : 1, i2 = 0, v0 = el2.volume;
+      clearInterval(holdFadeTimer);
+      holdFadeTimer = setInterval(function () {
+        i2++; el2.volume = Math.max(0, v0 * (1 - i2 / steps));
+        if (i2 >= steps) { clearInterval(holdFadeTimer); el2.pause(); }
+      }, fade ? JINGLE.fadeMs / 12 : 10);
+    }
     if (holdNodes) {
       var n = holdNodes; holdNodes = null;
       clearTimeout(n.timer);
