@@ -653,7 +653,7 @@ var TIMING = {
   faxHold: 6000,      // ... and stays up longer
   offersHold: 14000,  // offer cards visible
   hotlineDial: 2500,
-  hotlineQueue: 14000,
+  hotlineQueue: 12000,   // = jingle length (10-15 s)
   hotlineLive: 8000,
   summaryHold: 9000
 };
@@ -1081,6 +1081,7 @@ function activateScene(idx) {
   var s = scenes[idx];
   if (!s) return;
 
+  stopHoldJingle(true);
   clearSceneTimers();
   stopExchange();
   stopCarousel();
@@ -1157,6 +1158,7 @@ function showOverlay(spec) {
 }
 
 function showHotline(state) {
+  holdJingle(state);
   var title = 'Hartwell claims hotline';
   var status, sub, cls = '';
   if (state === 'dial')       { status = 'Dialling …';                sub = 'Voice menu: report a claim'; cls = 'dial'; }
@@ -1247,6 +1249,95 @@ function showCarousel() {
     '<div class="carousel-progress"><div class="carousel-progress-fill" id="cpFill"></div></div>' +
     '<div class="dots" id="dots"></div></div></div>';
   setupCarousel();
+}
+
+/* ── Hold-music jingle (original composition, ~12 s) ──────────────────
+   Plays while the call sits in the claims queue ("hotline:queue") and
+   fades out when Ms Becker picks up. To use your own licensed file
+   instead, set JINGLE.src, e.g. 'hold-jingle.mp3' (put it next to the page). */
+var JINGLE = { enabled: true, src: '', volume: 0.5 };
+var holdNodes = null, holdAudioEl = null;
+
+function holdJingle(state) {
+  if (!JINGLE.enabled) return;
+  if (state === 'queue') startHoldJingle(); else stopHoldJingle(true);
+}
+
+function startHoldJingle() {
+  if (holdNodes || holdAudioEl) return;
+  try {
+    if (JINGLE.src) {
+      holdAudioEl = new Audio(JINGLE.src);
+      holdAudioEl.volume = JINGLE.volume;
+      holdAudioEl.play().catch(function () {});
+      return;
+    }
+    unlockAudio();
+    if (!audioCtx) return;
+    var BEAT = 0.6, t0 = audioCtx.currentTime + 0.05;
+    var master = audioCtx.createGain();
+    var hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180;
+    var lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass';  lp.frequency.value = 3400;   /* "phone line" colour */
+    master.gain.value = 0.0;
+    master.connect(hp); hp.connect(lp); lp.connect(audioCtx.destination);
+    master.gain.setValueAtTime(0, t0);
+    master.gain.linearRampToValueAtTime(JINGLE.volume * 0.45, t0 + 0.25);
+
+    var F = { C3:130.81, F3:174.61, G3:196.00, C4:261.63, E4:329.63, F4:349.23, G4:392.00,
+              A4:440.00, B4:493.88, C5:523.25, D5:587.33, E5:659.25 };
+    function tone(freq, start, dur, type, vol) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq; o.connect(g); g.connect(master);
+      var s = t0 + start * BEAT, d = dur * BEAT;
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(vol, s + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+      o.start(s); o.stop(s + d + 0.05);
+      holdNodes.osc.push(o);
+    }
+    holdNodes = { osc: [], master: master };
+
+    /* 5 bars x 4 beats = 12 s at 100 bpm: a light, slightly nervous waiting-room tune */
+    var melody = [
+      ['E4',0,1],['G4',1,1],['C5',2,1],['G4',3,1],
+      ['F4',4,1],['A4',5,1],['D5',6,1],['A4',7,1],
+      ['G4',8,1],['B4',9,1],['E5',10,1],['D5',11,1],
+      ['C5',12,1],['B4',13,1],['A4',14,1],['G4',15,1],
+      ['E4',16,2],['C4',18,2]
+    ];
+    melody.forEach(function (m) { tone(F[m[0]], m[1], m[2] * 0.9, 'triangle', 0.5); });
+    [['C3',0],['C3',2],['F3',4],['F3',6],['G3',8],['G3',10],['C3',12],['G3',14],['C3',16]].forEach(function (b) {
+      tone(F[b[0]], b[1], 1.6, 'sine', 0.55);
+    });
+    /* soft clock tick on every beat */
+    var nbuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
+    var nd = nbuf.getChannelData(0);
+    for (var i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nd.length, 3);
+    for (var b = 0; b < 20; b++) {
+      var src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+      src.buffer = nbuf; g.gain.value = 0.12; src.connect(g); g.connect(master);
+      src.start(t0 + b * BEAT); holdNodes.osc.push(src);
+    }
+    /* natural end: fade over the last second */
+    master.gain.setValueAtTime(JINGLE.volume * 0.45, t0 + 20 * BEAT - 1.0);
+    master.gain.linearRampToValueAtTime(0, t0 + 20 * BEAT);
+    holdNodes.timer = setTimeout(function () { stopHoldJingle(false); }, 20 * BEAT * 1000 + 300);
+  } catch (e) { console.warn('[AVA] jingle', e); }
+}
+
+function stopHoldJingle(fade) {
+  try {
+    if (holdAudioEl) { holdAudioEl.pause(); holdAudioEl = null; }
+    if (holdNodes) {
+      var n = holdNodes; holdNodes = null;
+      clearTimeout(n.timer);
+      var now = audioCtx.currentTime, ramp = fade ? 0.4 : 0.02;
+      n.master.gain.cancelScheduledValues(now);
+      n.master.gain.setValueAtTime(n.master.gain.value, now);
+      n.master.gain.linearRampToValueAtTime(0, now + ramp);
+      setTimeout(function () { n.osc.forEach(function (o) { try { o.stop(); } catch (e) {} }); }, ramp * 1000 + 60);
+    }
+  } catch (e) {}
 }
 
 function setupCarousel() {
@@ -1567,6 +1658,7 @@ function endCall() {
   if (!callActive) return;
   callActive  = false;
   sceneActive = false;
+  stopHoldJingle(false);
   clearSceneTimers();
   stopCarousel();
   if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
