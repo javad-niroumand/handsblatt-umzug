@@ -451,7 +451,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ph-mark.ok{background:#34c759;}.ph-mark.no{background:#b0a8cc;}
 .ph-foot{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:12px;font-size:10.5px;font-weight:600;color:#8878b0;}
 .ph-foot.ok{color:#059669;}
-</style>
+#soundHint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:none;z-index:9999;padding:8px 16px;border-radius:20px;background:rgba(28,28,30,.88);color:#fff;font:600 12px -apple-system,sans-serif;pointer-events:none;white-space:nowrap;}#soundHint.show{display:block;}</style>
 </head>
 <body>
 
@@ -1489,17 +1489,39 @@ setInterval(updateDate, 60000); // update date at midnight
 /* ─────────────────────────────────────────────
    AUDIO
 ───────────────────────────────────────────── */
-function unlockAudio() {
-  if (audioCtx) { audioCtx.resume(); return; }
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+/* Audio unlock: browsers only allow sound after a real gesture (click/tap/key).
+   mousemove and touchstart do NOT count, so the context stayed suspended and the
+   first notification chime (fired by a timer) was silent. */
+var pendingChime = false;
+function audioReady() { return !!audioCtx && audioCtx.state === 'running'; }
+function updateSoundHint() {
+  var h = document.getElementById('soundHint');
+  if (h) h.classList.toggle('show', !audioReady() && !callActive);
 }
-['click','touchstart','mousemove'].forEach(function(e) {
-  document.addEventListener(e, unlockAudio, { once: true });
+function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var done = function () {
+      updateSoundHint();
+      var nb = document.getElementById('nb');
+      if (audioReady() && pendingChime && !callActive && nb && nb.classList.contains('show')) {
+        pendingChime = false; playNotifSound();   /* chime that was blocked while the banner was waiting */
+      }
+    };
+    var p = audioCtx.resume();
+    if (p && p.then) p.then(done, done); else done();
+  } catch (e) {}
+}
+['pointerdown', 'touchend', 'click', 'keydown'].forEach(function (e) {
+  document.addEventListener(e, unlockAudio, true);
 });
+window.addEventListener('load', updateSoundHint);
+
 
 function playNotifSound() {
   try {
     unlockAudio();
+    if (!audioReady()) { pendingChime = true; updateSoundHint(); return; }
     var notes = [{f:1047,s:0,d:.12},{f:1319,s:.14,d:.12},{f:1568,s:.28,d:.18},
                  {f:1047,s:.55,d:.12},{f:1319,s:.69,d:.12},{f:1568,s:.83,d:.18}];
     notes.forEach(function(n) {
@@ -1846,5 +1868,6 @@ function drawSphere(E) {
   });
 })();
 </script>
+<div id="soundHint">🔊 Tap once to enable sound</div>
 </body>
 </html>
