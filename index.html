@@ -451,6 +451,23 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ph-mark.ok{background:#34c759;}.ph-mark.no{background:#b0a8cc;}
 .ph-foot{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:12px;font-size:10.5px;font-weight:600;color:#8878b0;}
 .ph-foot.ok{color:#059669;}
+
+/* photo gallery with real photos + submit step */
+.ph{overflow:hidden;}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px;}
+.ph em{position:relative;z-index:1;}
+.ph img + em{position:absolute;left:0;right:0;bottom:0;padding:10px 4px 3px;text-align:center;color:#fff;
+  background:linear-gradient(180deg,transparent,rgba(20,10,50,.55));border-radius:0 0 12px 12px;}
+.ph.sel{box-shadow:0 0 0 2.5px #34c759;}
+.ph-mark{z-index:2;}
+.ph-mark.done{background:#0f9d58;}
+.ph.sending img{animation:phPulse 1s ease-in-out infinite;}
+@keyframes phPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.ph-bar{position:absolute;left:6px;right:6px;bottom:6px;height:4px;border-radius:3px;background:rgba(255,255,255,.45);z-index:3;overflow:hidden;}
+.ph-bar span{display:block;height:100%;width:0;background:#fff;border-radius:3px;animation:phFill 2.2s ease-out forwards;}
+@keyframes phFill{from{width:0}to{width:100%}}
+.ph-foot.sub{color:#5234c4;}
+.ph-foot.sub i{animation:phPulse 1s ease-in-out infinite;}
 </style>
 </head>
 <body>
@@ -699,7 +716,7 @@ function buildSeq(rows, opts) {
       row.state = 'wait'; row.status = r.status || 'manual / waiting';
       push(ov, r.hold || TIMING.rowHold);
     } else {
-      push({}, r.work || TIMING.row);
+      push(r.workOverlay ? { overlay: r.workOverlay } : {}, r.work || TIMING.row);
       row.state = 'done';
       push(Object.assign({}, ov, r.punch ? { punch: true } : {}), r.hold || TIMING.rowHold);
     }
@@ -789,8 +806,8 @@ var scenes = [
     noPartnerAtAll: true,
     animatedSequence: buildSeq([
       { text: 'Photo gallery searched: photos from moving day', src: 'Gallery · approved', overlay: 'photos:search', hold: 1800 },
-      { text: 'Photos with visible damage selected', src: 'AVA', overlay: 'photos:select', hold: 2200 },
-      { text: 'Photos uploaded, description from the call added', src: 'Hartwell portal', overlay: 'photos:upload', hold: 4000 }
+      { text: 'Photos with visible damage selected', src: 'AVA', overlay: 'photos:select', hold: 2400 },
+      { text: 'Photos uploaded, description from the call added', src: 'Hartwell portal', workOverlay: 'photos:submit', work: 2600, overlay: 'photos:upload', hold: 4500 }
     ])
   },
 
@@ -1187,28 +1204,38 @@ function showEmail(state) {
 }
 
 function showPhotos(state) {
+  /* 3 real damage photos (selected) + 3 other moving-day photos (not selected) */
   var tiles = [
-    { cls: 'sel',  label: 'Wardrobe corner' },
-    { cls: 'sel',  label: 'Crack' },
     { cls: 'none', label: 'Kitchen' },
+    { cls: 'sel',  label: 'Wardrobe',  img: 'damage/damage-1.jpg' },
+    { cls: 'none', label: 'Boxes' },
+    { cls: 'sel',  label: 'Close-up',  img: 'damage/damage-2.jpg' },
     { cls: 'skip', label: 'Thumb' },
-    { cls: 'sel',  label: 'Stairs' },
-    { cls: 'none', label: 'Boxes' }
+    { cls: 'sel',  label: 'Wall',      img: 'damage/damage-3.jpg' }
   ];
+  var chosen = state !== 'search';
   var grid = tiles.map(function (t) {
     var mark = '';
-    if (state !== 'search') {
-      if (t.cls === 'sel')  mark = '<span class="ph-mark ok"><i class="ti ti-check"></i></span>';
+    if (chosen) {
+      if (t.cls === 'sel') {
+        mark = state === 'upload'
+          ? '<span class="ph-mark done"><i class="ti ti-cloud-check"></i></span>'
+          : '<span class="ph-mark ok"><i class="ti ti-check"></i></span>';
+      }
       if (t.cls === 'skip') mark = '<span class="ph-mark no"><i class="ti ti-x"></i></span>';
     }
-    var klass = 'ph ' + (state === 'search' ? '' : t.cls);
-    return '<div class="' + klass + '"><i class="ti ti-photo"></i><em>' + t.label + '</em>' + mark + '</div>';
+    var klass = 'ph ' + (chosen ? t.cls : '') + (state === 'submit' && t.cls === 'sel' ? ' sending' : '');
+    var body = t.img
+      ? '<img src="' + t.img + '" alt="">'
+      : '<i class="ti ti-photo"></i>';
+    return '<div class="' + klass + '">' + body + '<em>' + t.label + '</em>' + mark +
+      (state === 'submit' && t.cls === 'sel' ? '<span class="ph-bar"><span></span></span>' : '') + '</div>';
   }).join('');
-  var foot = state === 'upload'
-    ? '<div class="ph-foot ok"><i class="ti ti-cloud-upload"></i><span>3 photos uploaded · description added</span></div>'
-    : state === 'select'
-      ? '<div class="ph-foot"><i class="ti ti-sparkles"></i><span>3 photos with visible damage selected</span></div>'
-      : '<div class="ph-foot"><i class="ti ti-loader-2"></i><span>Searching photos from moving day …</span></div>';
+  var foot;
+  if (state === 'upload')      foot = '<div class="ph-foot ok"><i class="ti ti-circle-check"></i><span>Submitted to Hartwell · 3 photos + description</span></div>';
+  else if (state === 'submit') foot = '<div class="ph-foot sub"><i class="ti ti-cloud-upload"></i><span>Submitting 3 photos to Hartwell …</span></div>';
+  else if (state === 'select') foot = '<div class="ph-foot"><i class="ti ti-sparkles"></i><span>3 photos with visible damage selected</span></div>';
+  else                         foot = '<div class="ph-foot"><i class="ti ti-loader-2"></i><span>Searching photos from moving day …</span></div>';
   sheet('Photo gallery', '<div class="ph-grid">' + grid + '</div>' + foot);
 }
 
