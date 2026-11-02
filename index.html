@@ -786,6 +786,11 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .dot{width:5px;height:5px;}.dot.active{width:16px;}
 
 .track-wrap{padding-bottom:4px;}
+
+/* carousel: room for the selection ring, no blurred glow (it was clipped into a pale strip) */
+.track-wrap{padding:3px 0 4px;}
+.v-offer{box-shadow:none;border:.5px solid rgba(60,60,67,.12);}
+.v-offer.rec{box-shadow:0 0 0 2px var(--i-blue);border-color:transparent;}
 </style>
 </head>
 <body>
@@ -1472,7 +1477,7 @@ function activateScene(idx) {
   showContextBadge(s.context || null);
 
   // Set sphere color based on scene
-  if (s.action === 'agentsearch') sphereColorMode = 'warning';
+  if (false) sphereColorMode = 'warning'; /* orb states set the colour */
   else sphereColorMode = 'default';
 
   // Run scene
@@ -2154,38 +2159,39 @@ function drawLoop() {
   drawSphere(smoothE);
 }
 
-/* ═══ AVA orb · Siri-style ═══════════════════════════════════════════════
-   A glossy glass sphere with slow, mixing colour (cyan, violet, pink, amber).
-   It reacts to AVA's voice and shows what AVA is doing:
-   idle     calm, full colour
-   work     cooler blues, faster flow: AVA is talking to another agent
-   success  greens, a short swell when a step lands
-   fail     colour drains to grey and the orb sits lower: "no agent, can't do this" */
+/* ═══ AVA orb · Siri waveform ═══════════════════════════════════════════
+   A dark glass sphere. Inside it, translucent ribbons (red, teal, blue) sweep and
+   cross around a bright white core with thin light rays, like the Siri waveform.
+   Always moving; AVA's voice makes the ribbons swell and the core flare.
+   idle    calm sweep, full colour
+   work    cooler colours, faster sweep: AVA is talking to another agent
+   success greens, a short swell when a step lands
+   fail    colour drains to grey, small and low: "no agent, can't do this"         */
 var ORB_PAL = {
-  idle:    { base: ['#1b2fe0', '#7a2ddb'], blobs: ['#22d3ee', '#8b5cf6', '#ff4fb8', '#ffa24a', '#3b82f6'] },
-  work:    { base: ['#0a3fd1', '#3a2bd8'], blobs: ['#22d3ee', '#3b82f6', '#8b5cf6', '#38bdf8', '#6366f1'] },
-  success: { base: ['#0b7a45', '#0a5f8f'], blobs: ['#34d399', '#4ade80', '#22d3ee', '#a3e635', '#30d158'] },
-  warn:    { base: ['#b45309', '#7c2d12'], blobs: ['#fbbf24', '#fb923c', '#f59e0b', '#fde68a', '#f97316'] },
-  fail:    { base: ['#4a4a4f', '#2c2c2e'], blobs: ['#a1a1a6', '#8e8e93', '#c7c7cc', '#6c6c70', '#aeaeb2'] }
+  idle:    { base: ['#222b52', '#070a16'], rib: ['#ff3b6b', '#ff6ec7', '#2de2c8', '#38bdf8', '#5b6bff'] },
+  work:    { base: ['#14275a', '#050816'], rib: ['#38bdf8', '#22d3ee', '#6366f1', '#818cf8', '#2de2c8'] },
+  success: { base: ['#103a2e', '#050f0c'], rib: ['#34d399', '#4ade80', '#a3e635', '#22d3ee', '#10b981'] },
+  warn:    { base: ['#3a2410', '#120a04'], rib: ['#fbbf24', '#fb923c', '#f59e0b', '#fde68a', '#f97316'] },
+  fail:    { base: ['#3a3a3e', '#161618'], rib: ['#8e8e93', '#6c6c70', '#aeaeb2', '#48484a', '#636366'] }
 };
 var ORB_PARAM = {
-  idle:    { spin: 1,    scale: 1,    glow: 0.55, dy: 0 },
-  work:    { spin: 2.4,  scale: 0.97, glow: 0.85, dy: 0 },
-  success: { spin: 1.6,  scale: 1.08, glow: 1,    dy: 0 },
-  warn:    { spin: 1,    scale: 1,    glow: 0.55, dy: 0 },
-  fail:    { spin: 0.3,  scale: 0.8,  glow: 0.1,  dy: 6 }
+  idle:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
+  work:    { spin: 2.3,  wave: 2.6,  scale: 0.97, amp: 1.15, glow: 1,   dy: 0 },
+  success: { spin: 1.5,  wave: 1.6,  scale: 1.08, amp: 1.2,  glow: 1,   dy: 0 },
+  warn:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
+  fail:    { spin: 0.22, wave: 0.3,  scale: 0.8,  amp: 0.45, glow: 0.1, dy: 6 }
 };
-/* five colour blobs drifting inside the sphere: start angle, orbit, speed, size */
-var ORB_BLOBS = [
-  { a: 0.0, o: 0.55, s: 0.55, z: 0.95 },
-  { a: 1.3, o: 0.62, s: -0.42, z: 0.85 },
-  { a: 2.6, o: 0.50, s: 0.70, z: 0.80 },
-  { a: 3.9, o: 0.66, s: -0.60, z: 0.75 },
-  { a: 5.2, o: 0.40, s: 0.35, z: 1.00 }
+/* ribbons: base angle, length, width, spin speed, wave phase offset, ripple count */
+var ORB_RIBBONS = [
+  { a: 0.35, len: 2.15, w: 0.52, s:  0.55, p: 0.0, k: 5.0 },
+  { a: 1.60, len: 2.00, w: 0.44, s: -0.42, p: 1.7, k: 4.0 },
+  { a: 2.75, len: 2.25, w: 0.56, s:  0.34, p: 3.1, k: 6.0 },
+  { a: 3.95, len: 1.95, w: 0.40, s: -0.62, p: 4.4, k: 4.5 },
+  { a: 5.10, len: 2.10, w: 0.48, s:  0.48, p: 5.6, k: 5.5 }
 ];
-var orbState = 'idle', orbTimer = null, orbPhase = 0;
+var orbState = 'idle', orbTimer = null, orbRot = 0, orbPhase = 0, orbBreath = 0;
 function hexRGB(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
-var orbCur = { spin: 1, scale: 1, glow: 0.55, dy: 0, base: ORB_PAL.idle.base.map(hexRGB), blobs: ORB_PAL.idle.blobs.map(hexRGB) };
+var orbCur = { spin: 1, wave: 1, scale: 1, amp: 1, glow: 0.7, dy: 0, base: ORB_PAL.idle.base.map(hexRGB), rib: ORB_PAL.idle.rib.map(hexRGB) };
 function rgba(c, a) { return 'rgba(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ',' + a + ')'; }
 function setOrb(state, holdMs) {
   clearTimeout(orbTimer);
@@ -2199,72 +2205,116 @@ function orbKey() {
   return 'idle';
 }
 
+/* one translucent ribbon: a long petal whose edges ripple, drawn along the x axis */
+function orbRibbon(len, wid, phase, k, edge) {
+  var N = 30, i, t, x, env, w;
+  ctx2d.beginPath();
+  for (i = 0; i <= N; i++) {
+    t = i / N; x = (t - 0.5) * len;
+    env = Math.pow(Math.sin(Math.PI * t), 1.5);
+    w = wid * env * (0.55 + 0.45 * Math.sin(phase + t * k));
+    if (i === 0) ctx2d.moveTo(x, -w); else ctx2d.lineTo(x, -w);
+  }
+  for (i = N; i >= 0; i--) {
+    t = i / N; x = (t - 0.5) * len;
+    env = Math.pow(Math.sin(Math.PI * t), 1.5);
+    w = wid * env * (0.55 + 0.45 * Math.sin(phase * 1.27 + t * k + 1.9));
+    ctx2d.lineTo(x, w);
+  }
+  ctx2d.closePath();
+}
+
 function drawSphere(E) {
   ctx2d.clearRect(0, 0, sc.width, sc.height);
 
-  /* ease everything towards the current state: spring-like, never jumps */
+  /* ease every parameter and colour towards the current state: never jumps */
   var k = orbKey(), tp = ORB_PARAM[k], pal = ORB_PAL[k], s = 0.06, i, n;
-  ['spin', 'scale', 'glow', 'dy'].forEach(function (p) { orbCur[p] += (tp[p] - orbCur[p]) * s; });
-  var tb = pal.base.map(hexRGB), tl = pal.blobs.map(hexRGB);
+  ['spin', 'wave', 'scale', 'amp', 'glow', 'dy'].forEach(function (p) { orbCur[p] += (tp[p] - orbCur[p]) * s; });
+  var tb = pal.base.map(hexRGB), tr = pal.rib.map(hexRGB);
   for (i = 0; i < 2; i++) for (n = 0; n < 3; n++) orbCur.base[i][n] += (tb[i][n] - orbCur.base[i][n]) * s;
-  for (i = 0; i < 5; i++) for (n = 0; n < 3; n++) orbCur.blobs[i][n] += (tl[i][n] - orbCur.blobs[i][n]) * s;
-  orbPhase += 0.016 * orbCur.spin * (1 + E * 2.2);
+  for (i = 0; i < 5; i++) for (n = 0; n < 3; n++) orbCur.rib[i][n] += (tr[i][n] - orbCur.rib[i][n]) * s;
+  var voice = 1 + E * 2.6;
+  orbRot += 0.016 * orbCur.spin * voice;
+  orbPhase += 0.016 * 2.2 * orbCur.wave * voice;
+  orbBreath += 0.016;
 
-  var R  = Math.min(CX, CY) * 0.60 * orbCur.scale * (1 + E * 0.10);
+  var R  = Math.min(CX, CY) * 0.68 * orbCur.scale;
   var cx = CX, cy = CY + orbCur.dy;
+  var breathe = 1 + 0.07 * Math.sin(orbBreath * 1.7);
 
-  /* soft halo */
-  var halo = ctx2d.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.6);
-  halo.addColorStop(0, rgba(orbCur.blobs[1], 0.38 * orbCur.glow + E * 0.25));
-  halo.addColorStop(1, rgba(orbCur.blobs[1], 0));
+  /* outer glow */
+  var halo = ctx2d.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 1.4);
+  halo.addColorStop(0, rgba(orbCur.rib[3], (0.30 + E * 0.35) * orbCur.glow));
+  halo.addColorStop(1, rgba(orbCur.rib[3], 0));
   ctx2d.fillStyle = halo;
-  ctx2d.beginPath(); ctx2d.arc(cx, cy, R * 1.6, 0, Math.PI * 2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R * 1.4, 0, Math.PI * 2); ctx2d.fill();
 
+  /* the glass sphere */
   ctx2d.save();
   ctx2d.beginPath(); ctx2d.arc(cx, cy, R, 0, Math.PI * 2); ctx2d.clip();
-
-  /* deep base */
-  var g = ctx2d.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+  var g = ctx2d.createRadialGradient(cx - R * 0.2, cy - R * 0.25, R * 0.05, cx, cy, R);
   g.addColorStop(0, rgba(orbCur.base[0], 1));
   g.addColorStop(1, rgba(orbCur.base[1], 1));
   ctx2d.fillStyle = g;
   ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
 
-  /* mixing colour */
-  ctx2d.globalCompositeOperation = 'screen';
-  for (i = 0; i < ORB_BLOBS.length; i++) {
-    var b = ORB_BLOBS[i];
-    var ang = b.a + orbPhase * b.s;
-    var bx = cx + Math.cos(ang) * R * b.o;
-    var by = cy + Math.sin(ang * 1.15 + i) * R * b.o;
-    var size = R * b.z * (1 + E * 0.35);
-    var rg = ctx2d.createRadialGradient(bx, by, 0, bx, by, size);
-    rg.addColorStop(0, rgba(orbCur.blobs[i], 0.95));
-    rg.addColorStop(1, rgba(orbCur.blobs[i], 0));
+  /* ribbons, additive so the crossings glow */
+  ctx2d.globalCompositeOperation = 'lighter';
+  for (i = 0; i < ORB_RIBBONS.length; i++) {
+    var b = ORB_RIBBONS[i];
+    var ang = b.a + orbRot * b.s * 2.2 + Math.sin(orbBreath * 0.9 + i * 1.3) * 0.35;
+    var len = R * b.len * (1 + E * 0.18);
+    var wid = R * b.w * orbCur.amp * breathe * (1 + E * 1.25);
+    var col = orbCur.rib[i];
+    ctx2d.save();
+    ctx2d.translate(cx, cy);
+    ctx2d.rotate(ang);
+    orbRibbon(len, wid, orbPhase * (1 + i * 0.13) + b.p, b.k, false);
+    var rg = ctx2d.createLinearGradient(-len / 2, 0, len / 2, 0);
+    rg.addColorStop(0, rgba(col, 0));
+    rg.addColorStop(0.5, rgba(col, 0.62));
+    rg.addColorStop(1, rgba(col, 0));
     ctx2d.fillStyle = rg;
-    ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
+    ctx2d.fill();
+    ctx2d.lineWidth = 0.8;
+    ctx2d.strokeStyle = rgba(col, 0.55);
+    ctx2d.stroke();
+    ctx2d.restore();
   }
+
+  /* thin white light rays through the core */
+  for (i = 0; i < 2; i++) {
+    ctx2d.save();
+    ctx2d.translate(cx, cy);
+    ctx2d.rotate(-1.15 + i * 1.55 + Math.sin(orbBreath * 0.7 + i * 2) * 0.22 + orbRot * (i ? 0.25 : -0.2));
+    var rl = R * (1.7 + E * 0.5) * (1 + 0.1 * Math.sin(orbBreath * 2.3 + i));
+    orbRibbon(rl, R * 0.06, 0, 1, false);
+    var sg = ctx2d.createLinearGradient(-rl / 2, 0, rl / 2, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)');
+    sg.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+    sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx2d.fillStyle = sg;
+    ctx2d.fill();
+    ctx2d.restore();
+  }
+
+  /* bright core */
+  var cr = R * (0.23 + E * 0.30) * breathe;
+  var cg = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, cr);
+  cg.addColorStop(0, 'rgba(255,255,255,0.95)');
+  cg.addColorStop(0.4, rgba(orbCur.rib[3], 0.42));
+  cg.addColorStop(1, rgba(orbCur.rib[3], 0));
+  ctx2d.fillStyle = cg;
+  ctx2d.fillRect(cx - cr, cy - cr, cr * 2, cr * 2);
   ctx2d.globalCompositeOperation = 'source-over';
-
-  /* depth: shade at the bottom, specular highlight top-left */
-  var sh = ctx2d.createLinearGradient(cx, cy - R * 0.1, cx, cy + R);
-  sh.addColorStop(0, 'rgba(10,10,60,0)');
-  sh.addColorStop(1, 'rgba(10,10,60,0.38)');
-  ctx2d.fillStyle = sh;
-  ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
-
-  var hl = ctx2d.createRadialGradient(cx - R * 0.38, cy - R * 0.5, 0, cx - R * 0.38, cy - R * 0.5, R * 0.75);
-  hl.addColorStop(0, 'rgba(255,255,255,0.75)');
-  hl.addColorStop(0.5, 'rgba(255,255,255,0.14)');
-  hl.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx2d.fillStyle = hl;
-  ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
   ctx2d.restore();
 
-  /* glass rim */
-  ctx2d.lineWidth = 1.2;
-  ctx2d.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx2d.beginPath(); ctx2d.arc(cx, cy, R - 0.6, 0, Math.PI * 2); ctx2d.stroke();
+  /* faint glass rim and the outer ring from the Siri mark */
+  ctx2d.lineWidth = 1;
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R - 0.5, 0, Math.PI * 2); ctx2d.stroke();
+  ctx2d.strokeStyle = rgba(orbCur.rib[0], 0.22 * orbCur.glow + 0.05);
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R * 1.12, 0, Math.PI * 2); ctx2d.stroke();
 }
 
 /* drive the orb from the scene frames (same events as the task list) */
