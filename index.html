@@ -634,6 +634,52 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .v-tag{font:500 14px var(--i-font);white-space:nowrap;}.v-tag.g{color:var(--i-green);}.v-tag.o{color:var(--i-orange);}
 .v-fine{margin-top:22px;padding:0 18px;font:400 13px/1.4 var(--i-font);color:var(--i-ink2);}
 @media (prefers-reduced-motion:reduce){.v-eq i,.feed-step.current .mark i{animation:none!important;}}
+
+/* ═══ Dynamic Island · Live Activity ═══ */
+.notch{display:none;}
+.isl{position:absolute;top:11px;left:50%;z-index:600;transform:translateX(-50%);background:#000;color:#fff;overflow:hidden;
+  width:112px;height:32px;border-radius:20px;font-family:var(--i-font);
+  transition:width .55s cubic-bezier(.34,1.32,.5,1),height .55s cubic-bezier(.34,1.32,.5,1),border-radius .55s cubic-bezier(.34,1.32,.5,1);}
+.isl.call,.isl.wait{width:204px;height:34px;border-radius:20px;}
+.isl.work,.isl.search{width:346px;height:118px;border-radius:42px;}
+.isl.fail{width:312px;height:64px;border-radius:32px;}
+.isl-in{position:absolute;inset:0;}
+.isl-in.enter{animation:islIn .4s .1s both;}
+@keyframes islIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.isl-row{height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
+.isl-row.fail{justify-content:flex-start;gap:12px;padding:0 16px;}
+.isl-orb{width:22px;height:22px;border-radius:50%;flex:none;position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#7d7aff,#bf5af2 60%,#ff6fa5);box-shadow:0 0 10px rgba(150,110,255,.55);}
+.isl-orb::after{content:"";position:absolute;inset:-30%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.9),transparent 38%),radial-gradient(circle at 72% 70%,#64d2ff,transparent 45%);mix-blend-mode:screen;animation:islSpin 8s linear infinite;}
+.isl-orb.big{width:40px;height:40px;}
+@keyframes islSpin{to{transform:rotate(360deg)}}
+.isl-eq{display:flex;gap:3px;align-items:center;height:16px;}
+.isl-eq i{width:3px;border-radius:2px;background:#34c759;animation:islEq 1s ease-in-out infinite;}
+.isl-eq i:nth-child(1){height:7px}.isl-eq i:nth-child(2){height:14px;animation-delay:.15s}.isl-eq i:nth-child(3){height:10px;animation-delay:.3s}.isl-eq i:nth-child(4){height:15px;animation-delay:.45s}
+@keyframes islEq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.isl-wait{display:flex;gap:6px;align-items:center;font:600 13px var(--i-font);color:#ff9f0a;}
+.isl-wait i{font-size:15px;}
+
+.isl-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 0;}
+.isl-tile{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:700 17px var(--i-font);color:#fff;flex:none;}
+.isl-tile i{font-size:20px;}
+.isl-tile.ok{background:#30d158;}
+.isl-tile.q{background:#3a3a3c;}.isl-tile.q i{animation:iSpin .9s linear infinite;}
+.isl-tile.no{width:32px;height:32px;background:#48484a;color:#aeaeb2;}
+.isl-tile.no i{font-size:17px;}
+.isl-link{flex:1;display:flex;justify-content:center;gap:7px;}
+.isl-link i{width:6px;height:6px;border-radius:50%;background:#7fd8ff;opacity:.25;animation:islHop 1.2s ease-in-out infinite;}
+.isl-link.fwd i:nth-child(2){animation-delay:.2s}.isl-link.fwd i:nth-child(3){animation-delay:.4s}
+.isl-link.back i:nth-child(1){animation-delay:.4s}.isl-link.back i:nth-child(2){animation-delay:.2s}
+.isl-link.done i{background:#30d158;opacity:1;animation:none;}
+@keyframes islHop{0%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1.25)}}
+.isl-text{padding:6px 22px 0;text-align:center;line-height:1.25;}
+.isl-text.left{padding:0;text-align:left;min-width:0;}
+.isl-text b{display:block;font:600 14px var(--i-font);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.isl-text span{display:block;font:400 12px var(--i-font);color:#98989d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.isl-prog{position:absolute;left:28px;right:28px;bottom:12px;height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden;}
+.isl-prog i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#7fd8ff,#5e5ce6);transition:width .9s cubic-bezier(.3,.9,.3,1);}
+@media (prefers-reduced-motion:reduce){.isl,.isl-in,.isl-orb::after,.isl-eq i,.isl-link i{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -642,6 +688,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 
 <div class="shell" id="myShell">
   <div class="notch"></div>
+    <div id="island" class="isl idle"><div class="isl-in"></div></div>
   <div class="screen">
     <!-- Wallpaper + home screen -->
     <div class="wp"></div>
@@ -1265,6 +1312,7 @@ function playSequence(s) {
       });
     }
     renderSteps(frame.steps);
+    islandFromFrame(frame, current);
     setHeaderVisible(!frame.noPartner);
     if (!frame.noPartner) setSpeaker(current, frame.speaker || 'mine', frame.pulse || false);
     if (frame.exchange && !frame.noPartner) startExchange(); else stopExchange();
@@ -1891,6 +1939,7 @@ function decline() {
 
 function accept() {
   callActive = true;
+  setIsland('call');
   clearTimeout(notifTimer);
   unlockAudio();
 
@@ -1918,6 +1967,7 @@ function endCall() {
   callActive  = false;
   sceneActive = false;
   stopHoldJingle(false);
+  setIsland('idle'); setOrb('idle');
   clearSceneTimers();
   stopCarousel();
   if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
@@ -1995,40 +2045,76 @@ function drawLoop() {
   drawSphere(smoothE);
 }
 
+/* ═══ Orb states (Siri-style) ═══════════════════════════════════════════
+   idle    slow breathing, brand purple
+   work    faster, tighter, cooler blue: AVA is talking to another agent
+   success short green glow when a step lands
+   fail    colour drains to grey and the orb sits lower: "no agent, can't do this"   */
+var ORB_PAL = {
+  idle:    ['#a288ff', '#451dc7'],
+  work:    ['#7fd8ff', '#5e5ce6'],
+  success: ['#4fd68f', '#0a5d34'],
+  warn:    ['#f0a830', '#8a4b08'],
+  fail:    ['#8e8e93', '#3a3a3c']
+};
+var ORB_PARAM = {
+  idle:    { spin: 1,    scale: 1,    amp: 6,   wave: 4, glow: 40, dy: 0 },
+  work:    { spin: 2.6,  scale: 0.94, amp: 9,   wave: 7, glow: 54, dy: 0 },
+  success: { spin: 1.5,  scale: 1.1,  amp: 6,   wave: 4, glow: 62, dy: 0 },
+  warn:    { spin: 1,    scale: 1,    amp: 6,   wave: 4, glow: 40, dy: 0 },
+  fail:    { spin: 0.35, scale: 0.78, amp: 1.5, wave: 2, glow: 10, dy: 7 }
+};
+var orbState = 'idle', orbTimer = null, orbRot = 0, orbPhase = 0;
+var orbCur = { spin: 1, scale: 1, amp: 6, wave: 4, glow: 40, dy: 0, c1: [162, 136, 255], c2: [69, 29, 199] };
+
+function hexRGB(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
+function rgbStr(c) { return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')'; }
+function setOrb(state, holdMs) {
+  clearTimeout(orbTimer);
+  orbState = state;
+  if (holdMs) orbTimer = setTimeout(function () { orbState = 'idle'; }, holdMs);
+}
+function orbKey() {
+  if (orbState !== 'idle') return orbState;
+  if (sphereColorMode === 'success') return 'success';
+  if (sphereColorMode === 'warning') return 'warn';
+  return 'idle';
+}
+
 function drawSphere(E) {
   ctx2d.clearRect(0, 0, sc.width, sc.height);
 
-  var c1, c2;
-  if (sphereColorMode === 'success') {
-    c1 = '#4fd68f'; c2 = '#0a5d34';
-  } else if (sphereColorMode === 'warning') {
-    c1 = '#f0a830'; c2 = '#8a4b08';
-  } else {
-    c1 = '#a288ff'; c2 = '#451DC7';
-  }
+  /* ease every parameter towards the current state (spring-like, never jumps) */
+  var k = orbKey(), tp = ORB_PARAM[k], tc = ORB_PAL[k], s = 0.07, i;
+  ['spin', 'scale', 'amp', 'wave', 'glow', 'dy'].forEach(function (n) { orbCur[n] += (tp[n] - orbCur[n]) * s; });
+  var t1 = hexRGB(tc[0]), t2 = hexRGB(tc[1]);
+  for (i = 0; i < 3; i++) { orbCur.c1[i] += (t1[i] - orbCur.c1[i]) * s; orbCur.c2[i] += (t2[i] - orbCur.c2[i]) * s; }
+  var c1 = rgbStr(orbCur.c1), c2 = rgbStr(orbCur.c2);
+  orbRot += 0.016 * orbCur.spin;
+  orbPhase += 0.016 * orbCur.wave;
 
   var idlePulse = Math.sin(time * 2) * 3;
-  var baseR = (CX * 0.52) + idlePulse + (E * 25);
+  var baseR = (CX * 0.52 * orbCur.scale) + idlePulse + (E * 25);
 
   ctx2d.save();
-  ctx2d.translate(CX, CY);
+  ctx2d.translate(CX, CY + orbCur.dy);
 
-  ctx2d.shadowBlur  = 40 + (E * 30);
+  ctx2d.shadowBlur  = orbCur.glow + (E * 30);
   ctx2d.shadowColor = c1;
   ctx2d.globalCompositeOperation = 'screen';
 
   for (var j = 0; j < 3; j++) {
     ctx2d.save();
-    ctx2d.rotate(time * (0.3 + j * 0.1));
+    ctx2d.rotate(orbRot * (0.3 + j * 0.1));
     ctx2d.beginPath();
     var offset = j * (Math.PI * 2 / 3);
-    for (var i = 0; i <= Math.PI * 2.1; i += 0.1) {
-      var wave  = Math.sin(i * (3 + j) + time * 4 + offset);
-      var spike = wave * (6 + E * 22);
+    for (var a = 0; a <= Math.PI * 2.1; a += 0.1) {
+      var wave  = Math.sin(a * (3 + j) + orbPhase + offset);
+      var spike = wave * (orbCur.amp + E * 22);
       var r = baseR + spike;
-      var x = Math.cos(i) * r;
-      var y = Math.sin(i) * r;
-      if (i === 0) ctx2d.moveTo(x, y);
+      var x = Math.cos(a) * r;
+      var y = Math.sin(a) * r;
+      if (a === 0) ctx2d.moveTo(x, y);
       else         ctx2d.lineTo(x, y);
     }
     ctx2d.closePath();
@@ -2043,7 +2129,6 @@ function drawSphere(E) {
 
   ctx2d.globalCompositeOperation = 'source-over';
   ctx2d.shadowBlur  = 0;
-  // On the light bg scene, draw a slightly larger, more opaque core
   var coreAlpha = sceneActive ? (E > 0.03 ? 0.55 + (E * 0.25) : 0.25) : (E > 0.03 ? 0.4 + (E * 0.3) : 0.15);
   ctx2d.globalAlpha = coreAlpha;
   ctx2d.beginPath();
@@ -2053,6 +2138,79 @@ function drawSphere(E) {
 
   ctx2d.restore();
 }
+
+/* ═══ Dynamic Island · Live Activity ════════════════════════════════════
+   idle    plain black pill
+   call    compact: AVA orb + voice bars (while the call runs)
+   wait    compact: clock + "In the queue"
+   work    expanded: AVA <-> partner, what is happening, progress line
+   search  expanded: looking for an agent endpoint
+   fail    expanded: no agent available                                      */
+var islandTimer = null, islandKey = '', islandMode = '';
+
+function setIsland(mode, d) {
+  var el = document.getElementById('island');
+  if (!el) return;
+  d = d || {};
+  var key = [mode, d.label, d.text, d.phase, d.logo].join('|');
+  clearTimeout(islandTimer);
+  var back = { work: 3600, search: 4200, fail: 5000 }[mode];
+  if (back) islandTimer = setTimeout(function () { setIsland('call'); }, back);
+  if (key === islandKey) return;
+  islandKey = key;
+  var entering = mode !== islandMode; islandMode = mode;
+  el.className = 'isl ' + mode;
+  var html = '';
+  var esc = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  if (mode === 'call') {
+    html = '<div class="isl-row"><span class="isl-orb"></span><span class="isl-eq"><i></i><i></i><i></i><i></i></span></div>';
+  } else if (mode === 'wait') {
+    html = '<div class="isl-row"><span class="isl-orb"></span><span class="isl-wait"><i class="ti ti-clock"></i>' + esc(d.text || 'In the queue') + '</span></div>';
+  } else if (mode === 'work' || mode === 'search') {
+    var done = d.phase === 'done', tileBg = d.color || '#8e8e93';
+    var tile = mode === 'search'
+      ? '<span class="isl-tile q"><i class="ti ti-loader-2"></i></span>'
+      : done ? '<span class="isl-tile ok"><i class="ti ti-check"></i></span>'
+             : '<span class="isl-tile" style="background:' + tileBg + '">' + esc(d.logo || 'A') + '</span>';
+    var dir = d.phase === 'partner' ? 'back' : 'fwd';
+    html = '<div class="isl-top"><span class="isl-orb big"></span>' +
+      '<span class="isl-link ' + (done ? 'done' : dir) + '"><i></i><i></i><i></i></span>' + tile + '</div>' +
+      '<div class="isl-text"><b>' + esc(d.label || 'Agent') + '</b><span>' + esc(d.text) + '</span></div>' +
+      '<div class="isl-prog"><i style="width:' + (done ? 100 : d.phase === 'partner' ? 72 : mode === 'search' ? 30 : 34) + '%"></i></div>';
+  } else if (mode === 'fail') {
+    html = '<div class="isl-row fail"><span class="isl-tile no"><i class="ti ti-x"></i></span>' +
+      '<div class="isl-text left"><b>' + esc(d.label || 'No agent available') + '</b><span>' + esc(d.text || 'Switching to a phone call') + '</span></div></div>';
+  }
+  var inner = el.firstChild;
+  inner.className = 'isl-in';
+  if (entering) { void inner.offsetWidth; inner.className = 'isl-in enter'; }   /* fade only when the island changes shape */
+  inner.innerHTML = html;
+}
+
+/* translate one animation frame of a scene into island + orb */
+function islandFromFrame(frame, cur) {
+  var steps = frame.steps || [], last = steps[steps.length - 1] || {};
+  var m = /Agent endpoint ([^:]+)/.exec(last.text || '');
+  var who = m ? m[1].trim() : '';
+  if (!frame.noPartner) {
+    var done = !!frame.pulse;
+    setIsland('work', { label: cur.logoLabel, text: last.text, phase: done ? 'done' : frame.speaker, logo: cur.logo, color: cur.logoColor });
+    if (done) setOrb('success', 900); else setOrb('work');
+  } else if (last.state === 'current' && /searching/i.test(last.text || '')) {
+    setIsland('search', { label: who ? 'Looking for ' + who + '’s agent' : 'Looking for an agent', text: 'Agent directory' });
+    setOrb('work');
+  } else if (last.state === 'fail') {
+    setIsland('fail', { label: who ? who + ' has no agent' : 'No agent available', text: 'AVA switches to a phone call' });
+    setOrb('fail', 5200);
+  } else if (last.state === 'wait') {
+    setIsland('wait', { text: /queue/i.test(last.text || '') ? 'In the queue' : 'Calling …' });
+    setOrb('idle');
+  } else {
+    setIsland('call');
+    if (orbState === 'work') setOrb('idle');
+  }
+}
+
 </script>
 <script>
 /* Preview without a live call: index_umzug.html?preview  (← → or 1-9, 0, -, = for scenes 10-12) */
