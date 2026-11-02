@@ -635,51 +635,157 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .v-fine{margin-top:22px;padding:0 18px;font:400 13px/1.4 var(--i-font);color:var(--i-ink2);}
 @media (prefers-reduced-motion:reduce){.v-eq i,.feed-step.current .mark i{animation:none!important;}}
 
-/* ═══ Dynamic Island · Live Activity ═══ */
-.notch{display:none;}
-.isl{position:absolute;top:11px;left:50%;z-index:600;transform:translateX(-50%);background:#000;color:#fff;overflow:hidden;
-  width:112px;height:32px;border-radius:20px;font-family:var(--i-font);
-  transition:width .55s cubic-bezier(.34,1.32,.5,1),height .55s cubic-bezier(.34,1.32,.5,1),border-radius .55s cubic-bezier(.34,1.32,.5,1);}
-.isl.call,.isl.wait{width:204px;height:34px;border-radius:20px;}
-.isl.work,.isl.search{width:346px;height:118px;border-radius:42px;}
-.isl.fail{width:312px;height:64px;border-radius:32px;}
-.isl-in{position:absolute;inset:0;}
-.isl-in.enter{animation:islIn .4s .1s both;}
-@keyframes islIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
-.isl-row{height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
-.isl-row.fail{justify-content:flex-start;gap:12px;padding:0 16px;}
-.isl-orb{width:22px;height:22px;border-radius:50%;flex:none;position:relative;overflow:hidden;
-  background:linear-gradient(145deg,#7d7aff,#bf5af2 60%,#ff6fa5);box-shadow:0 0 10px rgba(150,110,255,.55);}
-.isl-orb::after{content:"";position:absolute;inset:-30%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.9),transparent 38%),radial-gradient(circle at 72% 70%,#64d2ff,transparent 45%);mix-blend-mode:screen;animation:islSpin 8s linear infinite;}
-.isl-orb.big{width:40px;height:40px;}
-@keyframes islSpin{to{transform:rotate(360deg)}}
-.isl-eq{display:flex;gap:3px;align-items:center;height:16px;}
-.isl-eq i{width:3px;border-radius:2px;background:#34c759;animation:islEq 1s ease-in-out infinite;}
-.isl-eq i:nth-child(1){height:7px}.isl-eq i:nth-child(2){height:14px;animation-delay:.15s}.isl-eq i:nth-child(3){height:10px;animation-delay:.3s}.isl-eq i:nth-child(4){height:15px;animation-delay:.45s}
-@keyframes islEq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
-.isl-wait{display:flex;gap:6px;align-items:center;font:600 13px var(--i-font);color:#ff9f0a;}
-.isl-wait i{font-size:15px;}
+/* ═══ Layout v3: everything readable on the main page, no sheets, no sliding ═══
+   orb (compact) → task list (all rows) → detail panel → call controls            */
+.notch{display:block;z-index:600;}
+#co-scene{padding-top:46px;}
+.scene-caller-head{padding:0 24px 0;}
+.scene-caller-name{font-size:21px;}
+.scene-caller-status{font-size:13px;}
+.sphere-zone{height:96px;}
 
-.isl-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 0;}
-.isl-tile{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:700 17px var(--i-font);color:#fff;flex:none;}
-.isl-tile i{font-size:20px;}
-.isl-tile.ok{background:#30d158;}
-.isl-tile.q{background:#3a3a3c;}.isl-tile.q i{animation:iSpin .9s linear infinite;}
-.isl-tile.no{width:32px;height:32px;background:#48484a;color:#aeaeb2;}
-.isl-tile.no i{font-size:17px;}
-.isl-link{flex:1;display:flex;justify-content:center;gap:7px;}
-.isl-link i{width:6px;height:6px;border-radius:50%;background:#7fd8ff;opacity:.25;animation:islHop 1.2s ease-in-out infinite;}
-.isl-link.fwd i:nth-child(2){animation-delay:.2s}.isl-link.fwd i:nth-child(3){animation-delay:.4s}
-.isl-link.back i:nth-child(1){animation-delay:.4s}.isl-link.back i:nth-child(2){animation-delay:.2s}
-.isl-link.done i{background:#30d158;opacity:1;animation:none;}
-@keyframes islHop{0%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1.25)}}
-.isl-text{padding:6px 22px 0;text-align:center;line-height:1.25;}
-.isl-text.left{padding:0;text-align:left;min-width:0;}
-.isl-text b{display:block;font:600 14px var(--i-font);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.isl-text span{display:block;font:400 12px var(--i-font);color:#98989d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.isl-prog{position:absolute;left:28px;right:28px;bottom:12px;height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden;}
-.isl-prog i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#7fd8ff,#5e5ce6);transition:width .9s cubic-bezier(.3,.9,.3,1);}
-@media (prefers-reduced-motion:reduce){.isl,.isl-in,.isl-orb::after,.isl-eq i,.isl-link i{animation:none!important;transition:none!important;}}
+.action-feed{flex:0 0 auto;overflow:visible;margin:4px 14px 0;padding:12px 14px 4px;border-radius:26px;}
+.act-head{margin-bottom:2px;}
+.act-head .v-tile{width:32px;height:32px;border-radius:10px;}
+.act-head .v-tile i{font-size:18px;}
+.act-head b{font-size:15px;}
+.act-head span{font-size:12px;}
+.feed-header{margin:4px 0 2px;}
+.feed-step{padding:8px 0;gap:11px;}
+.feed-step .mark{width:22px;height:22px;}
+.feed-step .mark i{font-size:13px;}
+.feed-step .feed-step-text{font-size:14px;line-height:1.28;}
+.feed-step-src{font-size:11.5px;margin-top:1px;}
+
+/* the detail panel sits in the page, under the list */
+#co #overlayLayer{position:static;inset:auto;z-index:auto;pointer-events:auto;flex:0 0 auto;}
+#co #overlayLayer:empty{display:none;}
+.carousel-overlay{position:static;inset:auto;display:block;background:none;pointer-events:auto;}
+.carousel-box{margin:8px 14px 0;padding:12px 12px 12px;border-radius:26px;pointer-events:auto;
+  background:var(--i-glass);backdrop-filter:blur(28px) saturate(190%);-webkit-backdrop-filter:blur(28px) saturate(190%);
+  border:.5px solid var(--i-glass-edge);box-shadow:0 10px 30px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.55);}
+.carousel-box::before{display:none;}
+.carousel-title{font:600 15px var(--i-font);letter-spacing:-.01em;padding:0 4px;margin-bottom:8px;color:var(--i-ink);}
+#co .cac{padding:8px 30px 22px;}
+#co .cbi{width:60px;height:60px;}
+#co .cbi i{font-size:24px;}
+
+/* offers: all three side by side in the page, no carousel */
+.v-orows{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;}
+.v-orow{min-width:0;}
+.v-orow-price{flex:none;}
+.v-orow{position:relative;display:flex;align-items:center;gap:11px;padding:6px 11px;border-radius:18px;background:#fff;}
+.v-orow.rec{background:linear-gradient(160deg,#e8f1ff,#fff 70%);box-shadow:0 0 0 2px var(--i-blue);}
+.v-orow .v-mono{width:30px;height:30px;border-radius:9px;flex:none;}
+.v-orow-body{flex:1;min-width:0;}
+.v-orow-body b{display:flex;gap:7px;align-items:center;font:600 14.5px var(--i-font);color:var(--i-ink);}
+.v-orow-body small{display:block;margin-top:1px;font:400 12px var(--i-font);color:var(--i-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.v-orow .v-badge{position:static;padding:2px 8px;font-size:10.5px;border-radius:9px;}
+.v-orow-price{font:700 21px var(--i-round);letter-spacing:-.02em;color:var(--i-ink);white-space:nowrap;}
+.v-orow-price span{display:block;font:500 10.5px var(--i-font);letter-spacing:0;color:var(--i-ink2);text-align:right;margin-top:-1px;}
+
+/* hotline: one compact row */
+.v-hrow{display:flex;align-items:center;gap:14px;padding:2px 4px;}
+.v-hrow .v-wait{font-size:46px;margin:0;line-height:1;}
+.v-hrow .v-wait span{font-size:16px;margin-left:4px;}
+.v-hrow-body{flex:1;min-width:0;}
+.v-hrow-body b{display:block;font:600 15px var(--i-font);color:var(--i-ink);}
+.v-hrow-body small{display:block;margin-top:2px;font:400 12.5px var(--i-font);color:var(--i-ink2);}
+.v-hrow .v-eq{margin:0;justify-content:flex-end;height:26px;}
+.v-hrow .v-tile{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none;}
+.v-hrow .v-tile i{font-size:21px;}
+
+/* email + photos stay compact */
+.mail-card{margin:0;}
+.ph-grid{grid-template-columns:repeat(3,1fr);gap:4px;}
+.ph{aspect-ratio:auto;height:62px;border-radius:12px;overflow:hidden;}
+.ph img{border-radius:12px;}
+.ph img + em{border-radius:0 0 12px 12px;font-size:9.5px;padding:8px 4px 2px;}
+.ph em{font-size:9.5px;}
+.ph-mark{width:20px;height:20px;font-size:12px;right:5px;bottom:5px;}
+.ph-foot{margin:9px 4px 0;font-size:12.5px;}
+
+/* ═══ v4: orb gets its own space · smaller list text · Apple-style agent link · carousel panel ═══ */
+
+/* orb: canvas (128) fits inside its zone (136) with air above and below, so glow and motion never touch the list */
+.sphere-zone{height:136px;margin:6px 0 8px;overflow:visible;}
+.sphere-zone canvas{display:block;}
+.action-feed{margin-top:6px;}
+
+/* task list: smaller type, still fully readable */
+.act-head b{font-size:14px;}
+.act-head span{font-size:11.5px;}
+.feed-step{padding:7px 0;gap:10px;}
+.feed-step .mark{width:20px;height:20px;}
+.feed-step .mark i{font-size:12px;}
+.feed-step .feed-step-text{font-size:12.5px;line-height:1.28;}
+.feed-step-src{font-size:10.5px;}
+
+/* agent-to-agent: a pairing capsule, like AirDrop / SharePlay */
+.feed-header{display:flex;align-items:center;gap:10px;height:auto;margin:6px 0 4px;padding:9px 12px;
+  background:rgba(120,120,128,.1);border-radius:20px;}
+.feed-side{gap:0;}
+.feed-side-label{display:none;}
+.feed-side-icon{position:relative;width:34px;height:34px;border-radius:50%;box-shadow:none;transform:none;}
+#feedMineIcon{background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,transparent 38%),linear-gradient(145deg,#5ac8fa,#7d6bff 48%,#bf5af2 76%,#ff6fa5);
+  box-shadow:0 3px 12px rgba(125,107,255,.45);}
+#feedMineIcon i{display:none;}
+#feedLogo{font:700 14px var(--i-font);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.18);}
+.feed-side-icon.active{transform:none;box-shadow:0 0 0 0 transparent;}
+#feedMineIcon.active{box-shadow:0 3px 14px rgba(125,107,255,.6);}
+.feed-side-icon.active::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(0,122,255,.55);
+  animation:exRipple 1.3s ease-out infinite;pointer-events:none;}
+@keyframes exRipple{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.65);opacity:0}}
+.feed-side.dim{opacity:.55;}
+
+.feed-exchange{position:relative;flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;padding:0;min-width:0;}
+.ex-label{text-align:center;font:500 11px var(--i-font);color:var(--i-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.feed-exchange-track{position:relative;height:3px;border-radius:2px;overflow:hidden;background:rgba(120,120,128,.2);}
+.feed-exchange-dot{position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:2px;opacity:0;transform:none;box-shadow:none;
+  background:linear-gradient(90deg,rgba(127,216,255,0),#7fd8ff 45%,#5e5ce6);}
+.feed-exchange-dot.running{opacity:1;animation:exFwd 1.05s cubic-bezier(.45,0,.25,1) infinite;}
+@keyframes exFwd{0%{left:-40%}100%{left:100%}}
+.feed-exchange.back .feed-exchange-dot{background:linear-gradient(270deg,rgba(127,216,255,0),#7fd8ff 45%,#5e5ce6);}
+.feed-exchange.back .feed-exchange-dot.running{animation-name:exBack;}
+@keyframes exBack{0%{left:100%}100%{left:-40%}}
+.feed-exchange.done .feed-exchange-track{background:var(--i-green);}
+.feed-exchange.done .ex-label{color:var(--i-green);font-weight:600;}
+
+/* offers carousel, back as a compact panel in the page */
+#co .carousel-box{padding:10px 10px 10px;}
+.track-wrap{padding:0;}
+.offer-card{padding:0 2px;}
+.v-offer{padding:11px 14px 6px;border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,.07);}
+.v-offer.rec{box-shadow:0 0 0 2px var(--i-blue),0 8px 22px rgba(0,122,255,.16);}
+.v-by{font-size:14px;}
+.v-mono{width:28px;height:28px;border-radius:9px;font-size:13px;}
+.v-price{margin-top:6px;font-size:30px;}
+.v-price span{font-size:12px;}
+.v-offer ul{margin-top:6px;}
+.v-offer li{padding:5px 0;font-size:12.5px;gap:8px;}
+.v-offer li i{font-size:14px;}
+.v-badge{top:12px;right:12px;font-size:10.5px;padding:3px 9px;}
+.carousel-progress{margin:8px 6px 0;height:2.5px;}
+.dots{margin-top:8px;}
+
+/* carousel card: price sits on the name line */
+.v-offer{padding:10px 14px 4px;}
+.v-by{gap:9px;}
+.v-pr{margin-left:auto;font:700 22px var(--i-round);letter-spacing:-.02em;color:var(--i-ink);white-space:nowrap;text-align:right;}
+.v-pr small{display:block;font:500 10px var(--i-font);letter-spacing:0;color:var(--i-ink2);margin-top:-2px;}
+.v-offer .v-badge{position:static;font-size:10px;padding:2px 8px;border-radius:9px;}
+.v-offer ul{margin-top:6px;}
+.v-offer li{padding:4px 0;}
+
+/* spacing trims so the offers scene fits with the carousel */
+.feed-header{padding:7px 12px;margin:4px 0 2px;}
+#co .carousel-box{padding:8px 10px 5px;}
+.v-offer{padding:9px 14px 2px;}
+.v-offer li{padding:3px 0;}
+.dots{margin-top:5px;}
+.dot{width:5px;height:5px;}.dot.active{width:16px;}
+
+.track-wrap{padding-bottom:4px;}
 </style>
 </head>
 <body>
@@ -688,7 +794,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 
 <div class="shell" id="myShell">
   <div class="notch"></div>
-    <div id="island" class="isl idle"><div class="isl-in"></div></div>
   <div class="screen">
     <!-- Wallpaper + home screen -->
     <div class="wp"></div>
@@ -827,6 +932,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
               <span class="feed-side-label">AVA</span>
             </div>
             <div class="feed-exchange" id="feedExchange">
+              <span class="ex-label" id="exLabel"></span>
               <div class="feed-exchange-track">
                 <div class="feed-exchange-dot" id="exchangeDot"></div>
               </div>
@@ -840,6 +946,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
           <div class="feed-steps" id="feedSteps"></div>
         </div>
 
+        <div id="overlayLayer"></div>
         <div class="cac">
           <div class="cbw" onclick="toggleMute()">
             <div class="cbi cbg" id="muteBtnScene"><i class="ti ti-microphone" id="muteIconScene"></i></div>
@@ -856,8 +963,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
         </div>
       </div>
 
-      <!-- Overlay for carousel / approval -->
-      <div id="overlayLayer"></div>
+
 
     </div>
   </div>
@@ -888,7 +994,7 @@ var TIMING = {
   hotlineLive: 8000,
   summaryHold: 9000
 };
-var STEP_WINDOW = 4;   // how many rows stay visible in the data room
+var STEP_WINDOW = 9;   // how many rows stay visible in the data room
 
 var PARTNERS = {
   roadwise: { logo: 'R', logoColor: '#e60000', logoLabel: 'Roadwise Direct' },
@@ -952,7 +1058,7 @@ var scenes = [
       { text: 'New address: 186 m² living space, owner', src: 'Purchase contract' },
       { text: 'Previous flat: 94 m², contents sum insured €61,000', src: 'Contract folder' },
       { text: 'Building insurance: none on file', src: 'Contract folder' }
-    ], { window: 5 })
+    ], { window: 9 })
   },
 
   /* ── Scene 2 · Insurance: connected ─ */
@@ -1258,6 +1364,7 @@ function stopExchange() {
 }
 
 function setHeaderVisible(visible) {
+  var fh = document.getElementById('feedHeader'); if (fh) fh.style.display = visible ? 'flex' : 'none';
   document.getElementById('feedSideMine').style.display  = visible ? 'flex' : 'none';
   document.getElementById('feedExchange').style.display  = visible ? 'flex' : 'none';
   document.getElementById('feedSidePartner').style.display = visible ? 'flex' : 'none';
@@ -1283,6 +1390,14 @@ function setSpeaker(s, speaker, pulse) {
   partnerIcon.classList.toggle('active', speaker === 'partner');
   mineSide.classList.toggle('dim',    speaker === 'partner');
   partnerSide.classList.toggle('dim', speaker === 'mine');
+
+  /* agent-to-agent capsule: direction of the exchange + a plain-language label */
+  var exEl = document.getElementById('feedExchange'), exLb = document.getElementById('exLabel');
+  if (exEl) { exEl.classList.toggle('back', speaker === 'partner'); exEl.classList.toggle('done', !!pulse); }
+  if (exLb) {
+    var nm = s.logoLabel || 'the agent';
+    exLb.textContent = pulse ? 'Done' : (speaker === 'partner' ? nm + ' is answering' : 'Asking ' + nm);
+  }
 
   if (pulse) {
     var el = speaker === 'partner' ? partnerIcon : mineIcon;
@@ -1312,7 +1427,7 @@ function playSequence(s) {
       });
     }
     renderSteps(frame.steps);
-    islandFromFrame(frame, current);
+    orbFromFrame(frame, current);
     setHeaderVisible(!frame.noPartner);
     if (!frame.noPartner) setSpeaker(current, frame.speaker || 'mine', frame.pulse || false);
     if (frame.exchange && !frame.noPartner) startExchange(); else stopExchange();
@@ -1343,9 +1458,9 @@ function activateScene(idx) {
     var zone = document.getElementById('sceneSphereZone');
     zone.appendChild(sc);
     // Resize canvas for the fixed 160px sphere zone
-    sc.width  = 150;
-    sc.height = 150;
-    CX = 75; CY = 75; R = 62;
+    sc.width  = 128;
+    sc.height = 128;
+    CX = 64; CY = 64; R = 52;
     sceneActive = true;
   }
 
@@ -1414,22 +1529,19 @@ function showOverlay(spec) {
 
 function showHotline(state) {
   holdJingle(state);
-  var head, big = '', sub, eq = '';
-  if (state === 'dial')       { head = 'Dialling …';            sub = 'Opening the voice menu'; }
-  else if (state === 'queue') { head = 'On hold';               big = '<div class="v-wait">6<span>min</span></div>'; sub = 'Estimated wait'; eq = '<div class="v-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>'; }
-  else                        { head = 'Ms Becker is on the line'; sub = 'Eugen is speaking'; }
-  var st = state === 'dial' ? ['now', 'later', 'later', 'later'] : state === 'queue' ? ['ok', 'ok', 'now', 'later'] : ['ok', 'ok', 'ok', 'ok'];
-  var names = ['Dialled', 'Voice menu', 'In the queue', 'Ms Becker picks up'];
-  var ico = { ok: 'ti-check', now: 'ti-clock', later: '' };
-  var steps = names.map(function (n, i) {
-    return '<div class="v-hs ' + st[i] + '"><span class="v-mark">' + (ico[st[i]] ? '<i class="ti ' + ico[st[i]] + '"></i>' : '') + '</span>' + n + '</div>';
-  }).join('');
-  var muted = state === 'live'
-    ? '<div class="v-muted"><i class="ti ti-microphone-off"></i>AVA stays on the line, muted</div>' : '';
-  sheet('Hartwell claims hotline',
-    '<div class="v-hold"><div class="v-hold-head">' + head + '</div>' + big +
-    '<div class="v-hold-sub">' + sub + '</div>' + eq + '</div>' +
-    '<div class="v-hsteps">' + steps + '</div>' + muted);
+  var inner;
+  if (state === 'dial') {
+    inner = '<div class="v-hrow"><div class="v-tile" style="background:var(--i-blue)"><i class="ti ti-phone-call"></i></div>' +
+      '<div class="v-hrow-body"><b>Dialling …</b><small>Opening the voice menu</small></div></div>';
+  } else if (state === 'queue') {
+    inner = '<div class="v-hrow"><div class="v-wait">6<span>min</span></div>' +
+      '<div class="v-hrow-body"><b>Estimated wait</b><small>Next: Ms Becker picks up</small></div>' +
+      '<div class="v-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>';
+  } else {
+    inner = '<div class="v-hrow"><div class="v-tile" style="background:var(--i-green)"><i class="ti ti-headset"></i></div>' +
+      '<div class="v-hrow-body"><b>Ms Becker is on the line</b><small>Eugen is speaking · AVA stays on, muted</small></div></div>';
+  }
+  sheet('Hartwell claims hotline', inner);
 }
 function showEmail(state) {
   var checked = state === 'checked';
@@ -1488,21 +1600,19 @@ function showCarousel() {
   function li(t, ok) { return '<li class="' + (ok ? '' : 'off') + '"><i class="ti ' + (ok ? 'ti-check' : 'ti-x') + '"></i>' + t + '</li>'; }
   function card(o) {
     return '<div class="offer-card"><div class="v-offer' + (o.rec ? ' rec' : '') + '">' +
+      '<div class="v-by"><span class="v-mono" style="background:' + o.color + '">' + o.name.charAt(0) + '</span>' + o.name +
       (o.rec ? '<span class="v-badge">Recommended</span>' : '') +
-      '<div class="v-by"><span class="v-mono" style="background:' + o.color + '">' + o.name.charAt(0) + '</span>' + o.name + '</div>' +
-      '<div class="v-price">€' + o.price + '<span>per year</span></div>' +
+      '<span class="v-pr">€' + o.price + '<small>per year</small></span></div>' +
       '<ul>' + o.rows.map(function (r) { return li(r[0], r[1]); }).join('') + '</ul></div></div>';
   }
   var cards =
-    card({ name: 'Meridian', price: '436', color: '#8e8e93', rows: [['Fire', 1], ['Storm', 1], ['Burst pipes', 1], ['Natural hazards', 0], ['Garden shed', 0]] }) +
-    card({ name: 'Sterling', price: '489', color: '#007aff', rec: 1, rows: [['Fire, storm, water', 1], ['Heavy rain and wet cellar', 1], ['Drain backing up', 1], ['Garden shed included', 1]] }) +
+    card({ name: 'Meridian', price: '436', color: '#8e8e93', rows: [['Fire, storm, burst pipes', 1], ['Natural hazards', 0], ['Garden shed', 0]] }) +
+    card({ name: 'Sterling', price: '489', color: '#007aff', rec: 1, rows: [['Fire, storm, water', 1], ['Heavy rain, wet cellar, backflow', 1], ['Garden shed included', 1]] }) +
     card({ name: 'Halcyon', price: '516', color: '#ff9500', rows: [['Natural hazards', 1], ['Extras, e.g. solar panels', 1], ['Garden shed', 0]] });
   document.getElementById('overlayLayer').innerHTML =
     '<div class="carousel-overlay"><div class="carousel-box">' +
-    '<div class="carousel-title">Building insurance</div>' +
-    '<div class="v-lede">Three offers, asked directly from each insurer’s agent.</div>' +
     '<div class="track-wrap" id="trackWrap"><div class="track" id="track">' + cards + '</div></div>' +
-    '<div class="carousel-progress"><div class="carousel-progress-fill" id="cpFill"></div></div>' +
+    '<div class="carousel-progress" style="display:none"><div class="carousel-progress-fill" id="cpFill"></div></div>' +
     '<div class="dots" id="dots"></div></div></div>';
   setupCarousel();
 }
@@ -1939,7 +2049,6 @@ function decline() {
 
 function accept() {
   callActive = true;
-  setIsland('call');
   clearTimeout(notifTimer);
   unlockAudio();
 
@@ -1967,7 +2076,7 @@ function endCall() {
   callActive  = false;
   sceneActive = false;
   stopHoldJingle(false);
-  setIsland('idle'); setOrb('idle');
+  setOrb('idle');
   clearSceneTimers();
   stopCarousel();
   if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
@@ -2045,30 +2154,39 @@ function drawLoop() {
   drawSphere(smoothE);
 }
 
-/* ═══ Orb states (Siri-style) ═══════════════════════════════════════════
-   idle    slow breathing, brand purple
-   work    faster, tighter, cooler blue: AVA is talking to another agent
-   success short green glow when a step lands
-   fail    colour drains to grey and the orb sits lower: "no agent, can't do this"   */
+/* ═══ AVA orb · Siri-style ═══════════════════════════════════════════════
+   A glossy glass sphere with slow, mixing colour (cyan, violet, pink, amber).
+   It reacts to AVA's voice and shows what AVA is doing:
+   idle     calm, full colour
+   work     cooler blues, faster flow: AVA is talking to another agent
+   success  greens, a short swell when a step lands
+   fail     colour drains to grey and the orb sits lower: "no agent, can't do this" */
 var ORB_PAL = {
-  idle:    ['#a288ff', '#451dc7'],
-  work:    ['#7fd8ff', '#5e5ce6'],
-  success: ['#4fd68f', '#0a5d34'],
-  warn:    ['#f0a830', '#8a4b08'],
-  fail:    ['#8e8e93', '#3a3a3c']
+  idle:    { base: ['#1b2fe0', '#7a2ddb'], blobs: ['#22d3ee', '#8b5cf6', '#ff4fb8', '#ffa24a', '#3b82f6'] },
+  work:    { base: ['#0a3fd1', '#3a2bd8'], blobs: ['#22d3ee', '#3b82f6', '#8b5cf6', '#38bdf8', '#6366f1'] },
+  success: { base: ['#0b7a45', '#0a5f8f'], blobs: ['#34d399', '#4ade80', '#22d3ee', '#a3e635', '#30d158'] },
+  warn:    { base: ['#b45309', '#7c2d12'], blobs: ['#fbbf24', '#fb923c', '#f59e0b', '#fde68a', '#f97316'] },
+  fail:    { base: ['#4a4a4f', '#2c2c2e'], blobs: ['#a1a1a6', '#8e8e93', '#c7c7cc', '#6c6c70', '#aeaeb2'] }
 };
 var ORB_PARAM = {
-  idle:    { spin: 1,    scale: 1,    amp: 6,   wave: 4, glow: 40, dy: 0 },
-  work:    { spin: 2.6,  scale: 0.94, amp: 9,   wave: 7, glow: 54, dy: 0 },
-  success: { spin: 1.5,  scale: 1.1,  amp: 6,   wave: 4, glow: 62, dy: 0 },
-  warn:    { spin: 1,    scale: 1,    amp: 6,   wave: 4, glow: 40, dy: 0 },
-  fail:    { spin: 0.35, scale: 0.78, amp: 1.5, wave: 2, glow: 10, dy: 7 }
+  idle:    { spin: 1,    scale: 1,    glow: 0.55, dy: 0 },
+  work:    { spin: 2.4,  scale: 0.97, glow: 0.85, dy: 0 },
+  success: { spin: 1.6,  scale: 1.08, glow: 1,    dy: 0 },
+  warn:    { spin: 1,    scale: 1,    glow: 0.55, dy: 0 },
+  fail:    { spin: 0.3,  scale: 0.8,  glow: 0.1,  dy: 6 }
 };
-var orbState = 'idle', orbTimer = null, orbRot = 0, orbPhase = 0;
-var orbCur = { spin: 1, scale: 1, amp: 6, wave: 4, glow: 40, dy: 0, c1: [162, 136, 255], c2: [69, 29, 199] };
-
+/* five colour blobs drifting inside the sphere: start angle, orbit, speed, size */
+var ORB_BLOBS = [
+  { a: 0.0, o: 0.55, s: 0.55, z: 0.95 },
+  { a: 1.3, o: 0.62, s: -0.42, z: 0.85 },
+  { a: 2.6, o: 0.50, s: 0.70, z: 0.80 },
+  { a: 3.9, o: 0.66, s: -0.60, z: 0.75 },
+  { a: 5.2, o: 0.40, s: 0.35, z: 1.00 }
+];
+var orbState = 'idle', orbTimer = null, orbPhase = 0;
 function hexRGB(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
-function rgbStr(c) { return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')'; }
+var orbCur = { spin: 1, scale: 1, glow: 0.55, dy: 0, base: ORB_PAL.idle.base.map(hexRGB), blobs: ORB_PAL.idle.blobs.map(hexRGB) };
+function rgba(c, a) { return 'rgba(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ',' + a + ')'; }
 function setOrb(state, holdMs) {
   clearTimeout(orbTimer);
   orbState = state;
@@ -2084,130 +2202,82 @@ function orbKey() {
 function drawSphere(E) {
   ctx2d.clearRect(0, 0, sc.width, sc.height);
 
-  /* ease every parameter towards the current state (spring-like, never jumps) */
-  var k = orbKey(), tp = ORB_PARAM[k], tc = ORB_PAL[k], s = 0.07, i;
-  ['spin', 'scale', 'amp', 'wave', 'glow', 'dy'].forEach(function (n) { orbCur[n] += (tp[n] - orbCur[n]) * s; });
-  var t1 = hexRGB(tc[0]), t2 = hexRGB(tc[1]);
-  for (i = 0; i < 3; i++) { orbCur.c1[i] += (t1[i] - orbCur.c1[i]) * s; orbCur.c2[i] += (t2[i] - orbCur.c2[i]) * s; }
-  var c1 = rgbStr(orbCur.c1), c2 = rgbStr(orbCur.c2);
-  orbRot += 0.016 * orbCur.spin;
-  orbPhase += 0.016 * orbCur.wave;
+  /* ease everything towards the current state: spring-like, never jumps */
+  var k = orbKey(), tp = ORB_PARAM[k], pal = ORB_PAL[k], s = 0.06, i, n;
+  ['spin', 'scale', 'glow', 'dy'].forEach(function (p) { orbCur[p] += (tp[p] - orbCur[p]) * s; });
+  var tb = pal.base.map(hexRGB), tl = pal.blobs.map(hexRGB);
+  for (i = 0; i < 2; i++) for (n = 0; n < 3; n++) orbCur.base[i][n] += (tb[i][n] - orbCur.base[i][n]) * s;
+  for (i = 0; i < 5; i++) for (n = 0; n < 3; n++) orbCur.blobs[i][n] += (tl[i][n] - orbCur.blobs[i][n]) * s;
+  orbPhase += 0.016 * orbCur.spin * (1 + E * 2.2);
 
-  var idlePulse = Math.sin(time * 2) * 3;
-  var baseR = (CX * 0.52 * orbCur.scale) + idlePulse + (E * 25);
+  var R  = Math.min(CX, CY) * 0.60 * orbCur.scale * (1 + E * 0.10);
+  var cx = CX, cy = CY + orbCur.dy;
+
+  /* soft halo */
+  var halo = ctx2d.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.6);
+  halo.addColorStop(0, rgba(orbCur.blobs[1], 0.38 * orbCur.glow + E * 0.25));
+  halo.addColorStop(1, rgba(orbCur.blobs[1], 0));
+  ctx2d.fillStyle = halo;
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R * 1.6, 0, Math.PI * 2); ctx2d.fill();
 
   ctx2d.save();
-  ctx2d.translate(CX, CY + orbCur.dy);
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R, 0, Math.PI * 2); ctx2d.clip();
 
-  ctx2d.shadowBlur  = orbCur.glow + (E * 30);
-  ctx2d.shadowColor = c1;
+  /* deep base */
+  var g = ctx2d.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+  g.addColorStop(0, rgba(orbCur.base[0], 1));
+  g.addColorStop(1, rgba(orbCur.base[1], 1));
+  ctx2d.fillStyle = g;
+  ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+  /* mixing colour */
   ctx2d.globalCompositeOperation = 'screen';
-
-  for (var j = 0; j < 3; j++) {
-    ctx2d.save();
-    ctx2d.rotate(orbRot * (0.3 + j * 0.1));
-    ctx2d.beginPath();
-    var offset = j * (Math.PI * 2 / 3);
-    for (var a = 0; a <= Math.PI * 2.1; a += 0.1) {
-      var wave  = Math.sin(a * (3 + j) + orbPhase + offset);
-      var spike = wave * (orbCur.amp + E * 22);
-      var r = baseR + spike;
-      var x = Math.cos(a) * r;
-      var y = Math.sin(a) * r;
-      if (a === 0) ctx2d.moveTo(x, y);
-      else         ctx2d.lineTo(x, y);
-    }
-    ctx2d.closePath();
-    var grd = ctx2d.createLinearGradient(-baseR, -baseR, baseR, baseR);
-    grd.addColorStop(0, c1);
-    grd.addColorStop(1, c2);
-    ctx2d.globalAlpha = 0.65;
-    ctx2d.fillStyle   = grd;
-    ctx2d.fill();
-    ctx2d.restore();
+  for (i = 0; i < ORB_BLOBS.length; i++) {
+    var b = ORB_BLOBS[i];
+    var ang = b.a + orbPhase * b.s;
+    var bx = cx + Math.cos(ang) * R * b.o;
+    var by = cy + Math.sin(ang * 1.15 + i) * R * b.o;
+    var size = R * b.z * (1 + E * 0.35);
+    var rg = ctx2d.createRadialGradient(bx, by, 0, bx, by, size);
+    rg.addColorStop(0, rgba(orbCur.blobs[i], 0.95));
+    rg.addColorStop(1, rgba(orbCur.blobs[i], 0));
+    ctx2d.fillStyle = rg;
+    ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
   }
-
   ctx2d.globalCompositeOperation = 'source-over';
-  ctx2d.shadowBlur  = 0;
-  var coreAlpha = sceneActive ? (E > 0.03 ? 0.55 + (E * 0.25) : 0.25) : (E > 0.03 ? 0.4 + (E * 0.3) : 0.15);
-  ctx2d.globalAlpha = coreAlpha;
-  ctx2d.beginPath();
-  ctx2d.arc(0, 0, baseR * (sceneActive ? 0.38 : 0.4), 0, Math.PI * 2);
-  ctx2d.fillStyle = sceneActive ? 'rgba(255,255,255,0.9)' : '#ffffff';
-  ctx2d.fill();
 
+  /* depth: shade at the bottom, specular highlight top-left */
+  var sh = ctx2d.createLinearGradient(cx, cy - R * 0.1, cx, cy + R);
+  sh.addColorStop(0, 'rgba(10,10,60,0)');
+  sh.addColorStop(1, 'rgba(10,10,60,0.38)');
+  ctx2d.fillStyle = sh;
+  ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+  var hl = ctx2d.createRadialGradient(cx - R * 0.38, cy - R * 0.5, 0, cx - R * 0.38, cy - R * 0.5, R * 0.75);
+  hl.addColorStop(0, 'rgba(255,255,255,0.75)');
+  hl.addColorStop(0.5, 'rgba(255,255,255,0.14)');
+  hl.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx2d.fillStyle = hl;
+  ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
   ctx2d.restore();
+
+  /* glass rim */
+  ctx2d.lineWidth = 1.2;
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, R - 0.6, 0, Math.PI * 2); ctx2d.stroke();
 }
 
-/* ═══ Dynamic Island · Live Activity ════════════════════════════════════
-   idle    plain black pill
-   call    compact: AVA orb + voice bars (while the call runs)
-   wait    compact: clock + "In the queue"
-   work    expanded: AVA <-> partner, what is happening, progress line
-   search  expanded: looking for an agent endpoint
-   fail    expanded: no agent available                                      */
-var islandTimer = null, islandKey = '', islandMode = '';
-
-function setIsland(mode, d) {
-  var el = document.getElementById('island');
-  if (!el) return;
-  d = d || {};
-  var key = [mode, d.label, d.text, d.phase, d.logo].join('|');
-  clearTimeout(islandTimer);
-  var back = { work: 3600, search: 4200, fail: 5000 }[mode];
-  if (back) islandTimer = setTimeout(function () { setIsland('call'); }, back);
-  if (key === islandKey) return;
-  islandKey = key;
-  var entering = mode !== islandMode; islandMode = mode;
-  el.className = 'isl ' + mode;
-  var html = '';
-  var esc = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-  if (mode === 'call') {
-    html = '<div class="isl-row"><span class="isl-orb"></span><span class="isl-eq"><i></i><i></i><i></i><i></i></span></div>';
-  } else if (mode === 'wait') {
-    html = '<div class="isl-row"><span class="isl-orb"></span><span class="isl-wait"><i class="ti ti-clock"></i>' + esc(d.text || 'In the queue') + '</span></div>';
-  } else if (mode === 'work' || mode === 'search') {
-    var done = d.phase === 'done', tileBg = d.color || '#8e8e93';
-    var tile = mode === 'search'
-      ? '<span class="isl-tile q"><i class="ti ti-loader-2"></i></span>'
-      : done ? '<span class="isl-tile ok"><i class="ti ti-check"></i></span>'
-             : '<span class="isl-tile" style="background:' + tileBg + '">' + esc(d.logo || 'A') + '</span>';
-    var dir = d.phase === 'partner' ? 'back' : 'fwd';
-    html = '<div class="isl-top"><span class="isl-orb big"></span>' +
-      '<span class="isl-link ' + (done ? 'done' : dir) + '"><i></i><i></i><i></i></span>' + tile + '</div>' +
-      '<div class="isl-text"><b>' + esc(d.label || 'Agent') + '</b><span>' + esc(d.text) + '</span></div>' +
-      '<div class="isl-prog"><i style="width:' + (done ? 100 : d.phase === 'partner' ? 72 : mode === 'search' ? 30 : 34) + '%"></i></div>';
-  } else if (mode === 'fail') {
-    html = '<div class="isl-row fail"><span class="isl-tile no"><i class="ti ti-x"></i></span>' +
-      '<div class="isl-text left"><b>' + esc(d.label || 'No agent available') + '</b><span>' + esc(d.text || 'Switching to a phone call') + '</span></div></div>';
-  }
-  var inner = el.firstChild;
-  inner.className = 'isl-in';
-  if (entering) { void inner.offsetWidth; inner.className = 'isl-in enter'; }   /* fade only when the island changes shape */
-  inner.innerHTML = html;
-}
-
-/* translate one animation frame of a scene into island + orb */
-function islandFromFrame(frame, cur) {
+/* drive the orb from the scene frames (same events as the task list) */
+function orbFromFrame(frame, cur) {
   var steps = frame.steps || [], last = steps[steps.length - 1] || {};
-  var m = /Agent endpoint ([^:]+)/.exec(last.text || '');
-  var who = m ? m[1].trim() : '';
   if (!frame.noPartner) {
-    var done = !!frame.pulse;
-    setIsland('work', { label: cur.logoLabel, text: last.text, phase: done ? 'done' : frame.speaker, logo: cur.logo, color: cur.logoColor });
-    if (done) setOrb('success', 900); else setOrb('work');
+    if (frame.pulse) setOrb('success', 900); else setOrb('work');
   } else if (last.state === 'current' && /searching/i.test(last.text || '')) {
-    setIsland('search', { label: who ? 'Looking for ' + who + '’s agent' : 'Looking for an agent', text: 'Agent directory' });
     setOrb('work');
   } else if (last.state === 'fail') {
-    setIsland('fail', { label: who ? who + ' has no agent' : 'No agent available', text: 'AVA switches to a phone call' });
     setOrb('fail', 5200);
-  } else if (last.state === 'wait') {
-    setIsland('wait', { text: /queue/i.test(last.text || '') ? 'In the queue' : 'Calling …' });
+  } else if (orbState === 'work') {
     setOrb('idle');
-  } else {
-    setIsland('call');
-    if (orbState === 'work') setOrb('idle');
   }
 }
 
