@@ -791,6 +791,18 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .track-wrap{padding:3px 0 4px;}
 .v-offer{box-shadow:none;border:.5px solid rgba(60,60,67,.12);}
 .v-offer.rec{box-shadow:0 0 0 2px var(--i-blue);border-color:transparent;}
+
+/* summary: same layout as every other screen (orb stays in place, content under it) */
+#co-scene:has(.v-sum) .action-feed{display:none;}
+.v-sum{padding:14px 14px 12px;}
+.v-sum-head{display:flex;gap:12px;align-items:center;margin-bottom:12px;}
+.v-sum-ring{width:38px;height:38px;border-radius:50%;background:var(--i-green);display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 6px 16px rgba(52,199,89,.35);}
+.v-sum-ring i{font-size:22px;}
+.v-sum-head b{display:block;font:700 18px var(--i-font);letter-spacing:-.01em;color:var(--i-ink);}
+.v-sum-head small{display:block;margin-top:1px;font:400 12.5px var(--i-font);color:var(--i-ink2);}
+.v-sum .v-group{margin-top:0;}
+.v-sum .v-li{padding:10px 13px;}
+.v-sum .v-fine{margin-top:12px;font-size:12px;}
 </style>
 </head>
 <body>
@@ -994,10 +1006,11 @@ var TIMING = {
   faxDelay: 500,      // script: punchline lands 0.5 s after the beat ...
   faxHold: 6000,      // ... and stays up longer
   offersHold: 14000,  // offer cards visible
-  hotlineDial: 2500,
-  hotlineQueue: 12000,   // = jingle length (10-15 s)
-  hotlineLive: 8000,
-  summaryHold: 9000
+  hotlineDial: 1500,
+  hotlineQueue: 600000,  // stays in the queue until the flow sends "Becker"
+  hotlineLive: 60000,
+  summaryHold: 9000,
+  afterSummary: 60000    // safety: back to the home screen if the call end is never signalled
 };
 var STEP_WINDOW = 9;   // how many rows stay visible in the data room
 
@@ -1078,9 +1091,7 @@ var scenes = [
     id: 3, label: "Scene 2b · Contents", action: 'contents', context: 'insurance',
     animatedSequence: buildSeq([
       { text: 'Contents Homeshield: living space 94 m² → 186 m² updated', a2a: true, p: 'homeshield', src: 'Agent-to-agent' },
-      { text: 'Contents Homeshield: sum insured €61,000 → €121,000', a2a: true, p: 'homeshield', src: 'Agent-to-agent' },
-      { text: 'Outbuilding: garden shed', src: 'Purchase contract' },
-      { text: 'Contents Homeshield: garden shed included as storage location', a2a: true, p: 'homeshield', src: 'Agent-to-agent' }
+      { text: 'Contents Homeshield: sum insured €61,000 → €121,000', a2a: true, p: 'homeshield', src: 'Agent-to-agent' }
     ])
   },
   {
@@ -1090,6 +1101,14 @@ var scenes = [
       { text: 'Building insurance: Sterling offer, €489 / year, with natural hazards and garden shed', a2a: true, p: 'sterling', src: 'Agent-to-agent' },
       { text: 'Building insurance: Halcyon offer, €516 / year, with extras', a2a: true, p: 'halcyon', src: 'Agent-to-agent' }
     ], { tail: [{ openCarousel: true, duration: TIMING.offersHold }] })
+  },
+  {
+    id: 41, label: "Scene 2d · Weber and Husqvarna", action: 'weber grill', context: 'insurance',
+    animatedSequence: buildSeq([
+      { text: 'Contents Homeshield: Weber grill and Husqvarna mower included', a2a: true, p: 'homeshield', src: 'Agent-to-agent' },
+      { text: 'Outbuilding: garden shed', src: 'Purchase contract' },
+      { text: 'Contents Homeshield: garden shed included as storage location', a2a: true, p: 'homeshield', src: 'Agent-to-agent' }
+    ], { tail: [{ openCarousel: true, focus: 1, duration: 600000 }] })   // offers stay visible, Sterling in focus
   },
 
   /* ── Scene 3 · Furniture damage: not connected ─ */
@@ -1112,9 +1131,19 @@ var scenes = [
     noPartnerAtAll: true,
     animatedSequence: buildSeq([
       { text: 'Fallback: call to claims hotline prepared', src: 'AVA', wait: true, overlay: 'hotline:dial', hold: TIMING.hotlineDial },
-      { text: 'Call: in queue, about 6 minutes', src: 'Phone', wait: true, overlay: 'hotline:queue', hold: TIMING.hotlineQueue },
-      { text: 'Call: handed over to Eugen, AVA listening on mute', src: 'Phone', work: 600, overlay: 'hotline:live', hold: TIMING.hotlineLive }
+      { text: 'Call: in queue, about 6 minutes', src: 'Phone', wait: true, overlay: 'hotline:queue', hold: TIMING.hotlineQueue }
     ], { pre: [{ text: 'Agent endpoint Hartwell: searching …', state: 'fail', src: 'Agent directory', status: 'unavailable' }] })
+  },
+  {
+    id: 71, label: "Scene 3d · Ms Becker picks up", action: 'becker', context: 'claim',
+    noPartnerAtAll: true,
+    animatedSequence: buildSeq([
+      { text: 'Call: handed over to Eugen, AVA listening on mute', src: 'Phone', work: 600, overlay: 'hotline:live', hold: TIMING.hotlineLive }
+    ], { pre: [
+      { text: 'Agent endpoint Hartwell: searching …', state: 'fail', src: 'Agent directory', status: 'unavailable' },
+      { text: 'Fallback: call to claims hotline prepared', src: 'AVA' },
+      { text: 'Call: in queue, about 6 minutes', src: 'Phone' }
+    ] })
   },
 
   /* ── Scene 4 · The photos ───────────────── */
@@ -1420,7 +1449,7 @@ function playSequence(s) {
       // last frame finished — schedule return if this is the final scene
       if (s.isLast) {
         if (returnTimer) clearTimeout(returnTimer);
-        returnTimer = setTimeout(returnToDefault, 5000);
+        returnTimer = setTimeout(finishCall, TIMING.afterSummary);
       }
       return;
     }
@@ -1436,7 +1465,7 @@ function playSequence(s) {
     setHeaderVisible(!frame.noPartner);
     if (!frame.noPartner) setSpeaker(current, frame.speaker || 'mine', frame.pulse || false);
     if (frame.exchange && !frame.noPartner) startExchange(); else stopExchange();
-    if (frame.openCarousel) showCarousel();
+    if (frame.openCarousel) showCarousel(frame.focus);
     if (frame.openSummary) showSummary();
     if (frame.overlay) showOverlay(frame.overlay);
     if (frame.punch) { var rows = document.querySelectorAll('#feedSteps .feed-step'); if (rows.length) rows[rows.length - 1].classList.add('punch'); }
@@ -1508,9 +1537,9 @@ function showSummary() {
     return '<div class="v-li"><div class="v-tile" style="background:' + bg + '"><i class="ti ' + icon + '"></i></div>' +
       '<div class="v-li-body"><b>' + title + '</b><small>' + sub + '</small></div><span class="v-tag ' + tagCls + '">' + tag + '</span></div>';
   }
-  ol.innerHTML = '<div class="approval-overlay"><div class="v-done">' +
-    '<div class="v-ring"><i class="ti ti-check"></i></div>' +
-    '<h2>Three things handled</h2><p>One was automatic. Two needed you.</p>' +
+  ol.innerHTML = '<div class="carousel-overlay"><div class="carousel-box v-sum">' +
+    '<div class="v-sum-head"><span class="v-sum-ring"><i class="ti ti-check"></i></span>' +
+    '<div><b>Three things handled</b><small>One was automatic. Two needed you.</small></div></div>' +
     '<div class="v-group">' +
       row('#007aff', 'ti-shield-check', 'Insurance', 'Contents €121,000 · Sterling', 'Automatic', 'g') +
       row('#ff9500', 'ti-phone', 'Furniture damage', 'Hotline · photos sent by AVA', 'With you', 'o') +
@@ -1600,7 +1629,7 @@ function stopCarousel() {
   if (carouselRAF) { cancelAnimationFrame(carouselRAF); carouselRAF = null; }
 }
 
-function showCarousel() {
+function showCarousel(focus) {
   stopCarousel();
   function li(t, ok) { return '<li class="' + (ok ? '' : 'off') + '"><i class="ti ' + (ok ? 'ti-check' : 'ti-x') + '"></i>' + t + '</li>'; }
   function card(o) {
@@ -1620,6 +1649,13 @@ function showCarousel() {
     '<div class="carousel-progress" style="display:none"><div class="carousel-progress-fill" id="cpFill"></div></div>' +
     '<div class="dots" id="dots"></div></div></div>';
   setupCarousel();
+  if (focus != null) {
+    stopCarousel();
+    var tr = document.getElementById('track');
+    tr.style.transition = 'none';
+    tr.style.transform = 'translateX(-' + (focus * 100) + '%)';
+    [].forEach.call(document.querySelectorAll('#dots .dot'), function (d, i) { d.className = 'dot' + (i === focus ? ' active' : ''); });
+  }
 }
 /* ── Hold-music jingle (original composition, ~12 s) ──────────────────
    Plays while the call sits in the claims queue ("hotline:queue") and
@@ -1629,7 +1665,7 @@ var JINGLE = {
   enabled: true,
   src: 'hold-jingle.m4a',   // '' = use the built-in synthesized tune instead
   startAt: 0,                 // seconds into the file to start from
-  maxMs: 12000,               // play at most this long (10-15 s), then fade out
+  maxMs: 15000,               // play at most this long (10-15 s), then fade out
   fadeMs: 1200,
   volume: 0.5
 };
@@ -1637,7 +1673,7 @@ var holdNodes = null, holdAudioEl = null, holdAudioTimer = null, holdFadeTimer =
 
 function holdJingle(state) {
   if (!JINGLE.enabled) return;
-  if (state === 'queue') startHoldJingle(); else stopHoldJingle(true);
+  if (state === 'dial' || state === 'queue') startHoldJingle(); else stopHoldJingle(true);
 }
 
 function startHoldJingle() {
@@ -2030,6 +2066,8 @@ window.addEventListener('load', function() {
         } catch(e) { console.warn('[AVA] SIP INFO parse error:', e); }
       });
 
+      session.on('failed', function() { setTimeout(endCall, 800); });
+      try { session.connection.addEventListener('connectionstatechange', function() { var st = session.connection.connectionState; if (st === 'closed' || st === 'failed' || st === 'disconnected') setTimeout(endCall, 1200); }); } catch (e) {}
       session.on('ended', function() {
         document.getElementById('cst').textContent = 'Call ended';
         if (transcriptObs) { transcriptObs.disconnect(); transcriptObs = null; }
@@ -2176,8 +2214,8 @@ var ORB_PAL = {
 };
 var ORB_PARAM = {
   idle:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
-  work:    { spin: 2.3,  wave: 2.6,  scale: 0.97, amp: 1.15, glow: 1,   dy: 0 },
-  success: { spin: 1.5,  wave: 1.6,  scale: 1.08, amp: 1.2,  glow: 1,   dy: 0 },
+  work:    { spin: 1.1,  wave: 1.15, scale: 0.98, amp: 1.05, glow: 0.9, dy: 0 },
+  success: { spin: 1.2,  wave: 1.2,  scale: 1.05, amp: 1.1,  glow: 1,   dy: 0 },
   warn:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
   fail:    { spin: 0.22, wave: 0.3,  scale: 0.8,  amp: 0.45, glow: 0.1, dy: 6 }
 };
@@ -2330,6 +2368,9 @@ function orbFromFrame(frame, cur) {
     setOrb('idle');
   }
 }
+
+/* the call is over: back to the home screen */
+function finishCall() { callActive = true; endCall(); }
 
 </script>
 <script>
