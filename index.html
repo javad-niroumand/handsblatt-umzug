@@ -805,6 +805,48 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .v-sum .v-fine{margin-top:12px;font-size:12px;}
 
 #hlTimer{font-variant-numeric:tabular-nums;min-width:74px;}
+
+/* mail banner */
+#mailBanner{position:absolute;top:46px;left:10px;right:10px;z-index:700;display:flex;gap:11px;padding:11px 13px;border-radius:22px;
+  background:rgba(246,246,248,.94);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+  box-shadow:0 10px 32px rgba(0,0,0,.28);font-family:var(--i-font);transform:translateY(-150px);opacity:0;pointer-events:none;
+  transition:transform .55s cubic-bezier(.34,1.4,.64,1),opacity .4s ease;}
+#mailBanner.show{transform:translateY(0);opacity:1;}
+.mb-ico{width:36px;height:36px;border-radius:9px;background:linear-gradient(180deg,#4fb3ff,#0a6cff);color:#fff;display:grid;place-items:center;flex:none;font-size:20px;}
+.mb-body{flex:1;min-width:0;}
+.mb-top{display:flex;justify-content:space-between;align-items:baseline;}
+.mb-top b{font:600 14px var(--i-font);color:var(--i-ink);}
+.mb-top span{font:400 12px var(--i-font);color:var(--i-ink3);}
+.mb-sub{font:600 13px var(--i-font);color:var(--i-ink);margin-top:1px;}
+.mb-txt{font:400 12.5px var(--i-font);color:var(--i-ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-link{transition:transform .2s,background .2s;}
+.mail-link.tap{background:rgba(0,122,255,.22);transform:scale(.97);box-shadow:0 0 0 4px rgba(0,122,255,.16);}
+/* Hartwell portal */
+:root{--hw-or:#f26b1d;--hw-navy:#14213d;}
+#co .carousel-box.hwbox{padding:0;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.08);}
+.hw-bar{display:flex;align-items:center;gap:6px;margin:7px 10px 0;padding:5px 10px;border-radius:9px;background:#eeeef0;font:500 11px var(--i-font);color:var(--i-ink2);}
+.hw-bar i{font-size:12px;color:var(--i-green);}
+.hw-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:3px solid var(--hw-or);margin-top:6px;}
+.hw-logo{width:30px;height:30px;border-radius:8px;background:var(--hw-or);color:#fff;display:grid;place-items:center;font-size:18px;flex:none;}
+.hw-head b{display:block;font:700 15px var(--i-font);color:var(--hw-navy);letter-spacing:-.01em;}
+.hw-head small{display:block;font:400 11px var(--i-font);color:var(--i-ink2);}
+.hwbox .hw-sub{font:600 11.5px var(--i-font);color:var(--hw-navy);padding:8px 12px 4px;}
+.hwbox .ph-grid{padding:0 10px;}
+.hwbox .ph-foot{margin:8px 12px 10px;}
+.hw-drop{margin:12px;padding:16px 10px;border:2px dashed #f4a876;border-radius:14px;background:#fff6f0;text-align:center;}
+.hw-drop i{font-size:30px;color:var(--hw-or);}
+.hw-drop b{display:block;font:600 14px var(--i-font);color:var(--hw-navy);margin-top:2px;}
+.hw-drop small{display:block;font:400 11.5px var(--i-font);color:var(--i-ink2);margin-top:2px;}
+.hw-foot{display:flex;align-items:center;gap:6px;margin:0 14px 12px;font:500 12.5px var(--i-font);color:var(--hw-or);}
+/* portal: compact so it clears the call controls */
+.hwbox .ph{height:48px;}
+.hwbox .ph-grid{gap:3px;}
+.hw-bar{margin-top:5px;padding:4px 10px;}
+.hw-head{padding:6px 12px;margin-top:5px;}
+.hwbox .hw-sub{padding:6px 12px 3px;}
+.hwbox .ph-foot{margin:6px 12px 8px;}
+.hw-drop{margin:8px 12px;padding:11px 10px;}
+.hw-foot{margin:0 14px 9px;}
 </style>
 </head>
 <body>
@@ -1153,8 +1195,9 @@ var scenes = [
     id: 8, label: "Scene 4a · Email", action: 'email', context: 'claim',
     noPartnerAtAll: true,
     animatedSequence: buildSeq([
-      { text: 'Email Hartwell: upload link', src: 'Mailbox · approved', overlay: 'email:open', hold: 1500 },
-      { text: 'Link checked: sender and target address consistent', src: 'AVA', overlay: 'email:checked', hold: 2500 }
+      { text: 'Email from Hartwell received', src: 'Mailbox · approved', workOverlay: 'email:notify', work: 2300, overlay: 'email:open', hold: 1800 },
+      { text: 'Link opened: sender and target address consistent', src: 'AVA', workOverlay: 'email:tap', work: 1600, overlay: 'email:checked', hold: 1400 },
+      { text: 'Hartwell claims portal opened', src: 'Browser', work: 700, overlay: 'portal:open', hold: 600000 }
     ])
   },
   {
@@ -1481,6 +1524,7 @@ function playSequence(s) {
 function activateScene(idx) {
   var s = scenes[idx];
   if (!s) return;
+  orbMuted = (s.action.toLowerCase() === 'becker');
 
   stopHoldJingle(true);
   clearSceneTimers();
@@ -1558,12 +1602,14 @@ function sheet(title, inner) {
 }
 function showOverlay(spec) {
   var parts = spec.split(':'), name = parts[0], state = parts[1];
+  if (!(name === 'email' && state === 'notify')) hideMailBanner();
   if (name === 'hotline') showHotline(state);
   else if (name === 'email') showEmail(state);
   else if (name === 'photos') showPhotos(state);
+  else if (name === 'portal') showPortal(state);
 }
 
-var hlT0 = 0, hlInt = null, HL_TOTAL = 360;
+var hlT0 = 0, hlInt = null, HL_TOTAL = 360, hlRung = false;
 function hlLeft() {
   var s = hlT0 ? Math.max(0, HL_TOTAL - Math.floor((Date.now() - hlT0) / 1000)) : HL_TOTAL;
   return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
@@ -1571,6 +1617,7 @@ function hlLeft() {
 function hlTick() { var e = document.getElementById('hlTimer'); if (e) e.textContent = hlLeft(); }
 function showHotline(state) {
   holdJingle(state);
+  if (state === 'dial') { if (!hlRung) { hlRung = true; playRingTone(); } } else hlRung = false;
   if (state === 'queue') {
     if (!hlT0) { hlT0 = Date.now(); clearInterval(hlInt); hlInt = setInterval(hlTick, 250); }
   } else if (state !== 'dial') { hlT0 = 0; clearInterval(hlInt); hlInt = null; }
@@ -1589,17 +1636,17 @@ function showHotline(state) {
   sheet('Hartwell claims hotline', inner);
 }
 function showEmail(state) {
-  var checked = state === 'checked';
-  sheet('Email',
+  if (state === 'notify') { showMailBanner(); return; }
+  var checked = state === 'checked', tap = state === 'tap';
+  sheet('Mail',
     '<div class="mail-card">' +
     '<div class="mail-head"><div class="mail-ico"><i class="ti ti-mail"></i></div>' +
     '<div><div class="mail-from">Hartwell Claims</div><div class="mail-subj">Your claim: please upload your photos</div></div></div>' +
-    '<div class="mail-link"><i class="ti ti-link"></i><span>hartwell.example/claims/upload</span></div>' +
+    '<div class="mail-link' + (tap ? ' tap' : '') + '"><i class="ti ti-link"></i><span>claims.hartwell-movers.example/upload</span></div>' +
     '<div class="mail-check ' + (checked ? 'ok' : '') + '"><i class="ti ' + (checked ? 'ti-shield-check' : 'ti-loader-2') + '"></i>' +
-    '<span>' + (checked ? 'Sender and target address consistent' : 'Checking link …') + '</span></div>' +
+    '<span>' + (checked ? 'Sender and target address consistent' : (tap ? 'Opening link, checking address …' : 'Mail opened')) + '</span></div>' +
     '</div>');
 }
-
 function showPhotos(state) {
   /* 3 real damage photos (selected) + 3 other moving-day photos (not selected) */
   var tiles = [
@@ -1633,7 +1680,7 @@ function showPhotos(state) {
   else if (state === 'submit') foot = '<div class="ph-foot sub"><i class="ti ti-cloud-upload"></i><span>Submitting 3 photos to Hartwell …</span></div>';
   else if (state === 'select') foot = '<div class="ph-foot"><i class="ti ti-sparkles"></i><span>3 photos with visible damage selected</span></div>';
   else                         foot = '<div class="ph-foot"><i class="ti ti-loader-2"></i><span>Searching photos from moving day …</span></div>';
-  sheet('Photo gallery', '<div class="ph-grid">' + grid + '</div>' + foot);
+  portalBox('<div class="hw-sub">Photo library · select damage photos</div><div class="ph-grid">' + grid + '</div>' + foot);
 }
 
 function stopCarousel() {
@@ -1786,6 +1833,76 @@ function stopHoldJingle(fade) {
       setTimeout(function () { n.osc.forEach(function (o) { try { o.stop(); } catch (e) {} }); }, ramp * 1000 + 60);
     }
   } catch (e) {}
+}
+
+/* ── Ring-back tone: AVA is placing the call (two rings, 425 Hz) ── */
+function playRingTone() {
+  try {
+    unlockAudio();
+    if (!audioCtx) return;
+    var t0 = audioCtx.currentTime + 0.05;
+    [[0, 0.9], [1.3, 0.9]].forEach(function (r) {
+      var a = audioCtx.createOscillator(), b = audioCtx.createOscillator(), g = audioCtx.createGain();
+      a.frequency.value = 425; b.frequency.value = 450;
+      a.connect(g); b.connect(g); g.connect(audioCtx.destination);
+      var s = t0 + r[0], e = s + r[1];
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(0.11, s + 0.03);
+      g.gain.setValueAtTime(0.11, e - 0.05);
+      g.gain.linearRampToValueAtTime(0, e);
+      a.start(s); b.start(s); a.stop(e + 0.02); b.stop(e + 0.02);
+    });
+  } catch (e) {}
+}
+
+/* ── Mail notification banner (iOS style) ── */
+var mailBannerTimer = null;
+function playMailTone() {
+  try {
+    unlockAudio();
+    if (!audioCtx) return;
+    [[1175, 0], [1568, 0.13]].forEach(function (n) {
+      var o2 = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + n[1] + 0.02;
+      o2.type = 'sine'; o2.frequency.value = n[0]; o2.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.22, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o2.start(t); o2.stop(t + 0.55);
+    });
+  } catch (e) {}
+}
+function showMailBanner() {
+  var co = document.getElementById('co'); if (!co) return;
+  var b = document.getElementById('mailBanner');
+  if (!b) {
+    b = document.createElement('div'); b.id = 'mailBanner';
+    b.innerHTML = '<div class="mb-ico"><i class="ti ti-mail"></i></div>' +
+      '<div class="mb-body"><div class="mb-top"><b>Hartwell Claims</b><span>now</span></div>' +
+      '<div class="mb-sub">Your claim: please upload your photos</div>' +
+      '<div class="mb-txt">Mail · Open the secure link to add photos of the damage.</div></div>';
+    co.appendChild(b);
+  }
+  void b.offsetWidth;
+  b.classList.add('show');
+  playMailTone();
+  clearTimeout(mailBannerTimer);
+  mailBannerTimer = setTimeout(hideMailBanner, 3800);
+}
+function hideMailBanner() {
+  clearTimeout(mailBannerTimer);
+  var b = document.getElementById('mailBanner'); if (b) b.classList.remove('show');
+}
+
+/* ── Hartwell claims portal (their branding) ── */
+function portalBox(inner) {
+  document.getElementById('overlayLayer').innerHTML =
+    '<div class="carousel-overlay"><div class="carousel-box hwbox">' +
+    '<div class="hw-bar"><i class="ti ti-lock"></i><span>claims.hartwell-movers.example</span></div>' +
+    '<div class="hw-head"><span class="hw-logo"><i class="ti ti-truck"></i></span>' +
+    '<div><b>Hartwell Movers</b><small>Damage claim · Policy HW-447219</small></div></div>' +
+    inner + '</div></div>';
+}
+function showPortal() {
+  portalBox('<div class="hw-drop"><i class="ti ti-photo-up"></i><b>Add photos of the damage</b><small>JPG or PNG · up to 10 photos</small></div>' +
+    '<div class="hw-foot"><i class="ti ti-sparkles"></i><span>AVA is filling in the form for Eugen</span></div>');
 }
 
 function setupCarousel() {
@@ -2224,15 +2341,18 @@ var ORB_PAL = {
   work:    { base: ['#14275a', '#050816'], rib: ['#38bdf8', '#22d3ee', '#6366f1', '#818cf8', '#2de2c8'] },
   success: { base: ['#103a2e', '#050f0c'], rib: ['#34d399', '#4ade80', '#a3e635', '#22d3ee', '#10b981'] },
   warn:    { base: ['#3a2410', '#120a04'], rib: ['#fbbf24', '#fb923c', '#f59e0b', '#fde68a', '#f97316'] },
-  fail:    { base: ['#3a3a3e', '#161618'], rib: ['#8e8e93', '#6c6c70', '#aeaeb2', '#48484a', '#636366'] }
+  fail:    { base: ['#3a3a3e', '#161618'], rib: ['#8e8e93', '#6c6c70', '#aeaeb2', '#48484a', '#636366'] },
+  mute:    { base: ['#3a3a3e', '#161618'], rib: ['#8e8e93', '#6c6c70', '#aeaeb2', '#48484a', '#636366'] }
 };
 var ORB_PARAM = {
   idle:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
   work:    { spin: 1.1,  wave: 1.15, scale: 0.98, amp: 1.05, glow: 0.9, dy: 0 },
   success: { spin: 1.2,  wave: 1.2,  scale: 1.05, amp: 1.1,  glow: 1,   dy: 0 },
   warn:    { spin: 1,    wave: 1,    scale: 1,    amp: 1,    glow: 0.7, dy: 0 },
-  fail:    { spin: 0.22, wave: 0.3,  scale: 0.8,  amp: 0.45, glow: 0.1, dy: 6 }
+  fail:    { spin: 0.22, wave: 0.3,  scale: 0.8,  amp: 0.45, glow: 0.1, dy: 6 },
+  mute:    { spin: 0.3,  wave: 0.4,  scale: 0.94, amp: 0.55, glow: 0.12, dy: 0 }
 };
+var orbMuted = false;   /* AVA listens on mute while Eugen speaks with Ms Becker */
 /* ribbons: base angle, length, width, spin speed, wave phase offset, ripple count */
 var ORB_RIBBONS = [
   { a: 0.35, len: 2.15, w: 0.52, s:  0.55, p: 0.0, k: 5.0 },
@@ -2251,6 +2371,7 @@ function setOrb(state, holdMs) {
   if (holdMs) orbTimer = setTimeout(function () { orbState = 'idle'; }, holdMs);
 }
 function orbKey() {
+  if (orbMuted) return 'mute';
   if (orbState !== 'idle') return orbState;
   if (sphereColorMode === 'success') return 'success';
   if (sphereColorMode === 'warning') return 'warn';
@@ -2384,7 +2505,7 @@ function orbFromFrame(frame, cur) {
 }
 
 /* the call is over: back to the home screen */
-function finishCall() { callActive = true; endCall(); }
+function finishCall() { orbMuted = false; callActive = true; endCall(); }
 
 </script>
 <script>
