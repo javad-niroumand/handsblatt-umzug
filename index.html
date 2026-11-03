@@ -803,6 +803,8 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .v-sum .v-group{margin-top:0;}
 .v-sum .v-li{padding:10px 13px;}
 .v-sum .v-fine{margin-top:12px;font-size:12px;}
+
+#hlTimer{font-variant-numeric:tabular-nums;min-width:74px;}
 </style>
 </head>
 <body>
@@ -1103,9 +1105,9 @@ var scenes = [
     ], { tail: [{ openCarousel: true, duration: TIMING.offersHold }] })
   },
   {
-    id: 41, label: "Scene 2d · Weber and Husqvarna", action: 'weber grill', context: 'insurance',
+    id: 41, label: "Scene 2d · Weber and Segway", action: 'weber grill', context: 'insurance',
     animatedSequence: buildSeq([
-      { text: 'Contents Homeshield: Weber grill and Husqvarna mower included', a2a: true, p: 'homeshield', src: 'Agent-to-agent' },
+      { text: 'Contents Homeshield: Weber grill and Segway mower included', a2a: true, p: 'homeshield', src: 'Agent-to-agent' },
       { text: 'Outbuilding: garden shed', src: 'Purchase contract' },
       { text: 'Contents Homeshield: garden shed included as storage location', a2a: true, p: 'homeshield', src: 'Agent-to-agent' }
     ], { tail: [{ openCarousel: true, focus: 1, duration: 600000 }] })   // offers stay visible, Sterling in focus
@@ -1561,15 +1563,24 @@ function showOverlay(spec) {
   else if (name === 'photos') showPhotos(state);
 }
 
+var hlT0 = 0, hlInt = null, HL_TOTAL = 360;
+function hlLeft() {
+  var s = hlT0 ? Math.max(0, HL_TOTAL - Math.floor((Date.now() - hlT0) / 1000)) : HL_TOTAL;
+  return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+}
+function hlTick() { var e = document.getElementById('hlTimer'); if (e) e.textContent = hlLeft(); }
 function showHotline(state) {
   holdJingle(state);
+  if (state === 'queue') {
+    if (!hlT0) { hlT0 = Date.now(); clearInterval(hlInt); hlInt = setInterval(hlTick, 250); }
+  } else if (state !== 'dial') { hlT0 = 0; clearInterval(hlInt); hlInt = null; }
   var inner;
   if (state === 'dial') {
     inner = '<div class="v-hrow"><div class="v-tile" style="background:var(--i-blue)"><i class="ti ti-phone-call"></i></div>' +
       '<div class="v-hrow-body"><b>Dialling …</b><small>Opening the voice menu</small></div></div>';
   } else if (state === 'queue') {
-    inner = '<div class="v-hrow"><div class="v-wait">6<span>min</span></div>' +
-      '<div class="v-hrow-body"><b>Estimated wait</b><small>Next: Ms Becker picks up</small></div>' +
+    inner = '<div class="v-hrow"><div class="v-wait" id="hlTimer">' + hlLeft() + '</div>' +
+      '<div class="v-hrow-body"><b>Estimated wait</b><small>You are in the queue</small></div>' +
       '<div class="v-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>';
   } else {
     inner = '<div class="v-hrow"><div class="v-tile" style="background:var(--i-green)"><i class="ti ti-headset"></i></div>' +
@@ -1673,16 +1684,17 @@ var holdNodes = null, holdAudioEl = null, holdAudioTimer = null, holdFadeTimer =
 
 function holdJingle(state) {
   if (!JINGLE.enabled) return;
-  if (state === 'dial' || state === 'queue') startHoldJingle(); else stopHoldJingle(true);
+  if (state !== 'dial' && state !== 'queue') stopHoldJingle(true);   /* start/finish come from the flow signals */
 }
 
-function startHoldJingle() {
+function startHoldJingle(loop) {
   if (holdNodes || holdAudioEl) return;
   try {
     if (JINGLE.src) {
       var el = new Audio(JINGLE.src);
       holdAudioEl = el;
       el.volume = JINGLE.volume;
+      el.loop = !!loop;
       function fallback() { if (holdAudioEl === el) { holdAudioEl = null; clearTimeout(holdAudioTimer); startSynthJingle(); } }
       el.addEventListener('error', fallback);
       el.addEventListener('loadedmetadata', function () {
@@ -1690,7 +1702,7 @@ function startHoldJingle() {
       });
       var pr = el.play();
       if (pr && pr.catch) pr.catch(function () { fallback(); });
-      holdAudioTimer = setTimeout(function () { stopHoldJingle(true); }, JINGLE.maxMs - JINGLE.fadeMs);
+      holdAudioTimer = setTimeout(function () { stopHoldJingle(true); }, (loop ? 90000 : JINGLE.maxMs) - JINGLE.fadeMs);
       return;
     }
     startSynthJingle();
@@ -2051,6 +2063,8 @@ window.addEventListener('load', function() {
           if (!data.action) return;
 
           var incoming = String(data.action).toLowerCase();
+          if (incoming === 'jingle start') { startHoldJingle(true); return; }
+          if (incoming === 'jingle finish') { stopHoldJingle(true); return; }
           var idx = scenes.findIndex(function(s) { return s.action.toLowerCase() === incoming; });
 
           if (idx !== -1) {
