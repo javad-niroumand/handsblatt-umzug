@@ -1618,15 +1618,12 @@ function hlTick() { var e = document.getElementById('hlTimer'); if (e) e.textCon
 function showHotline(state) {
   holdJingle(state);
   if (state === 'dial') { if (!hlRung) { hlRung = true; playRingTone(); } } else hlRung = false;
-  if (state === 'queue') {
-    if (!hlT0) { hlT0 = Date.now(); clearInterval(hlInt); hlInt = setInterval(hlTick, 250); }
-  } else if (state !== 'dial') { hlT0 = 0; clearInterval(hlInt); hlInt = null; }
   var inner;
   if (state === 'dial') {
     inner = '<div class="v-hrow"><div class="v-tile" style="background:var(--i-blue)"><i class="ti ti-phone-call"></i></div>' +
       '<div class="v-hrow-body"><b>Dialling …</b><small>Opening the voice menu</small></div></div>';
   } else if (state === 'queue') {
-    inner = '<div class="v-hrow"><div class="v-wait" id="hlTimer">' + hlLeft() + '</div>' +
+    inner = '<div class="v-hrow"><div class="v-wait">6<span>min</span></div>' +
       '<div class="v-hrow-body"><b>Estimated wait</b><small>You are in the queue</small></div>' +
       '<div class="v-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>';
   } else {
@@ -1727,6 +1724,14 @@ var JINGLE = {
   fadeMs: 1200,
   volume: 0.5
 };
+/* the file is loaded ahead of time: the first jingle only runs ~3 s, so it must start the moment the signal arrives */
+var jinglePre = null;
+function prepJingle() {
+  try {
+    if (JINGLE.src && !jinglePre) { jinglePre = new Audio(JINGLE.src); jinglePre.preload = 'auto'; jinglePre.load(); }
+  } catch (e) {}
+}
+prepJingle();
 var holdNodes = null, holdAudioEl = null, holdAudioTimer = null, holdFadeTimer = null;
 
 function holdJingle(state) {
@@ -1738,7 +1743,10 @@ function startHoldJingle(loop) {
   if (holdNodes || holdAudioEl) return;
   try {
     if (JINGLE.src) {
-      var el = new Audio(JINGLE.src);
+      var el = jinglePre || new Audio(JINGLE.src);
+      jinglePre = null;
+      try { el.currentTime = 0; } catch (e) {}
+      setTimeout(prepJingle, 300);
       holdAudioEl = el;
       el.volume = JINGLE.volume;
       el.loop = !!loop;
